@@ -1,0 +1,24 @@
+<launch>
+
+    <arg name="robot_name" value="alpha_rise"/>
+
+    <node ns="$(arg robot_name)" pkg="alpha_localization" type="world_odom_transform_node" name="world_odom_transform_node" output="screen">
+        <param name = "tf_prefix" value="$(arg robot_name)"/>
+        <!-- <param name = "mag_declination" value="0.2" /> -->
+        <param name = "acceptable_var" value = "5" />
+        <param name ="m_gps_wait_time" value ="5"/>
+        <!-- beach_pond -->
+        <!-- <param name = "datum_latitude" value="41.574236666666664"/> -->
+        <!-- <param name = "datum_longitude" value="-71.787575"/> -->
+        <!-- allen harbor -->
+        <!-- <param name = "datum_latitude" value="41.621601667"/> -->
+        <!-- <param name = "datum_longitude" value="-71.411018333"/> -->
+        <param name = "datum_latitude" value="41.6216"/>
+        <param name = "datum_longitude" value="-71.41095"/>
+        <param name = "position_accuracy" value="3.0"/>
+        <remap from = "odometry" to ="odometry/filtered/local" />
+    </node>
+
+
+
+</launch>
