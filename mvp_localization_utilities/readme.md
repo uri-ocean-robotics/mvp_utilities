@@ -16,7 +16,8 @@ https://geographiclib.sourceforge.io/C++/doc/magnetic.html
 sudo mkdir -p /usr/local/share/GeographicLib
 sudo tar xofjC wmm2020.tar.bz2 /usr/local/share/GeographicLib
 ```
-- you may need to rename the file, e.g.,
+
+- For PI you need to copy the file to a different directory
 ```
-sudo cp wmm2020.wmm WMM2020.wmm
+sudo tar xofjC wmm2020.tar.bz2 /usr/local/share/GeographicLib
 ```

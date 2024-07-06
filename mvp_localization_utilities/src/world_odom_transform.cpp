@@ -237,7 +237,7 @@ bool WorldOdomTransform::f_set_tf()
     geometry_msgs::PoseWithCovarianceStamped m_depth_gps_temp = m_depth_gps;
     sensor_msgs::NavSatFix m_gps_temp = m_gps;
 
-    GeographicLib::MagneticModel magModel("WMM2020");
+    GeographicLib::MagneticModel magModel("wmm2020");
 
     
     ll_point.latitude = m_gps_temp.latitude;
@@ -273,7 +273,7 @@ bool WorldOdomTransform::f_set_tf()
 
     transformStamped.transform.translation.x = dx;
     transformStamped.transform.translation.y = dy;
-    transformStamped.transform.translation.z = m_depth_gps_temp.pose.pose.position.z + 0.0;
+    transformStamped.transform.translation.z = -m_depth_gps_temp.pose.pose.position.z + 0.0;
 
     tf2::Quaternion q;
     q.setRPY(0, 0, m_mag_declination);
