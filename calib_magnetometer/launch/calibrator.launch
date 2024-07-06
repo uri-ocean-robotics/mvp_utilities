@@ -1,0 +1,25 @@
+<?xml version="1.0" ?>
+
+<launch>
+  <param name="use_sim_time" value="false" />
+
+  <node pkg="calib_magnetometer" type="calibrate_imu.py" name="mag_calibrator" output="screen">
+    <param name="publish_calibrated" value="False" />
+    <param name="multi_datasets" value="False" />
+    <param name="max_samples" value="10000" />
+    <param name="calibrations_dir" value="$(find calib_magnetometer)/result" />
+
+    <remap from="/magnetometer" to="alpha_rise/imu/mag"/>
+  </node>
+
+    <!-- visualization: opengl 4.0 issue, use opengl 3.0 instead -->
+    <!-- <node name="rviz" pkg="rviz" type="rviz" args="-1-opengl 300 -d $(find calib_magnetometer)/launch/display.rviz" />  -->
+
+  <!-- ros service for send commands: start,stop,calibrate -->
+  <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" 
+        args="--perspective-file $(find calib_magnetometer)/launch/Default.perspective"/>
+
+
+</launch>
+
+

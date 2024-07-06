@@ -1,0 +1,8 @@
+<?xml version="1.0" ?>
+
+<launch>
+
+  <node pkg="calib_gyro" type="calibrate_gyro.py" name="gyro_calibrator" output="screen">
+  </node>
+
+</launch>
