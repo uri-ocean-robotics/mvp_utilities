@@ -85,7 +85,7 @@ WorldOdomTransform::WorldOdomTransform(){
     m_odom_subscriber = m_nh->subscribe("odometry", 10, 
                                 &WorldOdomTransform::f_cb_odom, this);
 
-    m_depth_subscriber=m_nh->subscribe("depth_filtered", 10, 
+    m_depth_subscriber=m_nh->subscribe("depth/odometry", 10, 
                                 &WorldOdomTransform::f_cb_depth, this);
     /**
      * Initialize services
