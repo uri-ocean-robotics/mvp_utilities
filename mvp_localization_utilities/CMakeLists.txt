@@ -4,7 +4,7 @@ project(mvp_localization_utilities)
 find_package(catkin REQUIRED COMPONENTS
   robot_localization
   roscpp
-  uno_lqe
+  # uno_lqe
   std_msgs
   std_srvs
   geometry_msgs
