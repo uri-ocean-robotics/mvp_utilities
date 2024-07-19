@@ -54,6 +54,8 @@ WorldOdomTransform::WorldOdomTransform(){
 
     m_pnh->param<double>("datum_altitude", m_datum_altitude, 0.0);
 
+    m_pnh->param<std::string>("mag_model_path", m_mag_model_path, "");
+
     m_pnh->param<bool>("publish_tf", m_publish_tf, true);
     
     m_datum.latitude = m_datum_latitude;
@@ -237,7 +239,7 @@ bool WorldOdomTransform::f_set_tf()
     geometry_msgs::PoseWithCovarianceStamped m_depth_gps_temp = m_depth_gps;
     sensor_msgs::NavSatFix m_gps_temp = m_gps;
 
-    GeographicLib::MagneticModel magModel("wmm2020");
+    GeographicLib::MagneticModel magModel("wmm2020", m_mag_model_path);
 
     
     ll_point.latitude = m_gps_temp.latitude;

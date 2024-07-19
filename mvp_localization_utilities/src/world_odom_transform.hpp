@@ -100,6 +100,8 @@ private:
     
     std::string m_tf_prefix;
 
+    std::string m_mag_model_path;
+
     bool m_datum_set = false;
 
     bool m_tf_set = false;
