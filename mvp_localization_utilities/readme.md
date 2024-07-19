@@ -21,3 +21,11 @@ sudo tar xofjC wmm2020.tar.bz2 /usr/local/share/GeographicLib
 ```
 sudo tar xofjC wmm2020.tar.bz2 /usr/local/share/GeographicLib
 ```
+
+## Note:
+We have implemented the rosparam for the magnetic model pat.
+you can do something below in your launch file now.
+
+```
+<param name = "mag_model_path" value = "$(find mvp_localization_utilities)/config/magnetic"/>
+```
