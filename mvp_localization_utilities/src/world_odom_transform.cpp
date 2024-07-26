@@ -339,6 +339,7 @@ void WorldOdomTransform::f_cb_odom(const nav_msgs::Odometry& msg)
             tf2::doTransform(odom_pose, world_pose, tf_o2w);
             geometry_msgs::Point map_point;
             geographic_msgs::GeoPoint ll_point;
+            world_pose.header= msg.header;
 
             map_point.x = world_pose.pose.position.x;
             map_point.y = world_pose.pose.position.y;
@@ -346,7 +347,6 @@ void WorldOdomTransform::f_cb_odom(const nav_msgs::Odometry& msg)
 
             f_dis2ll(map_point, ll_point);
             geographic_msgs::GeoPoseStamped geopose;
-
             geopose.pose.position.latitude = ll_point.latitude;
             geopose.pose.position.longitude = ll_point.longitude;
             geopose.pose.position.altitude = ll_point.altitude;
