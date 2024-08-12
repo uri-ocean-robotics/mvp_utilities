@@ -42,6 +42,8 @@ WorldOdomTransform::WorldOdomTransform(){
     m_pnh->param<bool>("mag_declination_auto", m_mag_declination_auto, true);
     //mag_north - true north in ENU frame.
 
+    m_pnh->param<bool>("use_depth_for_tf", m_use_depth_for_tf, true);
+
     m_pnh->param<double>("acceptable_var", m_acceptable_var, 0.0);
 
     m_pnh->param<double>("position_accuracy", m_position_accuracy, 0.0);
@@ -190,19 +192,22 @@ void WorldOdomTransform::f_cb_gps_fix(const sensor_msgs::NavSatFix& msg)
 
                 gps_odom.pose.pose.position.x = odom_pose.pose.position.x;
                 gps_odom.pose.pose.position.y = odom_pose.pose.position.y;
+                gps_odom.pose.pose.position.z = odom_pose.pose.position.z;
                 gps_odom.header.frame_id = m_odom_frame;
                 gps_odom.header.stamp = msg.header.stamp;
-                gps_odom.pose.covariance[0] = pow(m_position_accuracy,2);
+                // gps_odom.pose.covariance[0] = pow(m_position_accuracy,2);
+                gps_odom.pose.covariance[0] = msg.position_covariance[0];
                 gps_odom.pose.covariance[1] = 0;
                 gps_odom.pose.covariance[2] = 0;
                 gps_odom.pose.covariance[6] =0;
-                gps_odom.pose.covariance[7] =  pow(m_position_accuracy,2);
+                // gps_odom.pose.covariance[7] =  pow(m_position_accuracy,2);
+                gps_odom.pose.covariance[7] = msg.position_covariance[4];
                 gps_odom.pose.covariance[8] = 0;
                 gps_odom.pose.covariance[12] = 0;
                 gps_odom.pose.covariance[13] = 0;
-                gps_odom.pose.covariance[14] =  pow(m_position_accuracy,2);
-
-                m_gps_odom_publisher.publish(gps_odom);   
+                // gps_odom.pose.covariance[14] =  pow(m_position_accuracy,2);
+                gps_odom.pose.covariance[14] =  msg.position_covariance[8];
+                m_gps_odom_publisher.publish(gps_odom);  
 
             } catch(tf2::TransformException &e) {
                 ROS_WARN_STREAM_THROTTLE(10, std::string("Can't get the tf from world to odom") + e.what());
@@ -275,7 +280,14 @@ bool WorldOdomTransform::f_set_tf()
 
     transformStamped.transform.translation.x = dx;
     transformStamped.transform.translation.y = dy;
+
+    if (m_use_depth_for_tf)
+    {
     transformStamped.transform.translation.z = -m_depth_gps_temp.pose.pose.position.z + 0.0;
+    }
+    else{
+    transformStamped.transform.translation.z = -m_gps_temp.altitude + 0.0;
+    }
 
     tf2::Quaternion q;
     q.setRPY(0, 0, m_mag_declination);
