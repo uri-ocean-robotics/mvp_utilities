@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   mvp_msgs
   sensor_msgs
+  visualization_msgs
   imu_transformer
   geographic_msgs
   nav_msgs
@@ -60,6 +61,7 @@ add_executable(depth_odometry_publisher src/depth_odometry_publisher.cpp)
 add_executable(pressure_to_depth_node src/pressure_to_depth_node.cpp)
 add_executable(imu_ned_to_enu src/imu_ned_enu.cpp)
 add_executable(world_odom_transform_node src/world_odom_transform.cpp)
+add_executable(world_to_world_transform_node src/world_to_world_transform.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -73,6 +75,7 @@ add_dependencies(depth_odometry_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${
 add_dependencies(pressure_to_depth_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(imu_ned_to_enu ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(world_odom_transform_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(world_to_world_transform_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(depth_odometry_publisher
@@ -89,5 +92,9 @@ target_link_libraries(imu_ned_to_enu
 
 
 target_link_libraries(world_odom_transform_node
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(world_to_world_transform_node
   ${catkin_LIBRARIES}
 )
