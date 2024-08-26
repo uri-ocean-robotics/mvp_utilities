@@ -66,6 +66,10 @@ private:
     std::string m_auv_tf_prefix;
     
     std::string m_asv_tf_prefix;
+
+    std::string m_auvdatum_topic;
+
+    std::string m_asvfromLL_srvname;
     
     bool m_datum_set = false;
 
