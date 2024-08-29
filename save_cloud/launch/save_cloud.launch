@@ -1,0 +1,34 @@
+<!-- Usage:
+  1) Save pointcloud in the general mode, it save the pointcloud in a constant frames. (e.g., general_mode=true, max_saved_frames=500), 
+  2) Save pointcloud in specific mode, it save when you want it. (e.g., general_mode=false, rosservice call /save_pointcloud "data: true")
+  3) Save odometry in csv(only x,y,z). (e.g., save_odom=true) -->
+  
+<?xml version="1.0"?>
+<launch>
+  <param name="/use_sim_time" value="true"/>
+
+  <!-- ======================================== play the dataset ====================================== -->
+
+  <arg name="bag_start" default="0" /> 
+  <arg name="bag" 
+       default="/home/lin/Desktop/wamv/2024-08-19-13-28-53.bag" />
+  <node pkg="rosbag" type="play" name="rosbag" args="--pause --clock -d 1 -s $(arg bag_start) $(arg bag)" required="true"/>
+
+  <!-- ======================================== save the image ====================================== -->
+
+  <node name="save_cloud_node" pkg="save_cloud" type="save_cloud_node" output="screen" >
+      <!-- For Pointcloud -->
+      <remap from="/pointcloud/in" to="/wamv_rise/norbit/cloud"/>
+      <param name="frame_parent" type="string" value="wamv_rise/world"/>
+      <param name="frame_child" type="string" value="wamv_rise/norbit"/>
+      <param name="cloud_path" type="string" value="/home/lin/Desktop/wamv_pcd/"/>
+      <param name="max_saved_frames" type="int" value="500"/>
+      <param name="general_mode" type="bool" value="true"/>
+
+      <!-- For Odometry -->
+      <remap from="/odom" to="/wamv_rise/odometry/filtered/local"/>
+      <param name="odom_file" type="string" value="/home/lin/Desktop/wamv_pcd/odom.csv"/>
+      <param name="save_odom" type="bool" value="false"/>
+  </node>
+
+</launch>
