@@ -1,93 +1,93 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.8)
 project(mvp_localization_utilities)
 
-find_package(catkin REQUIRED COMPONENTS
-  robot_localization
-  roscpp
-  # uno_lqe
-  std_msgs
-  std_srvs
-  geometry_msgs
-  mvp_msgs
-  sensor_msgs
-  imu_transformer
-  geographic_msgs
-  nav_msgs
-  tf2_eigen
-  tf2
-  tf2_ros
-)
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
 
-find_package(Eigen3 REQUIRED)
+# find dependencies
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
+
+find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(geographic_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_eigen REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+
+find_package(robot_localization REQUIRED)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "/usr/share/cmake/geographiclib/")
 find_package(GeographicLib REQUIRED)
 
-add_definitions(${EIGEN_DEFINITIONS})
 
-catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES alpha_localization
-#  CATKIN_DEPENDS robot_localization
-#  DEPENDS system_lib
+# uncomment the following section in order to fill in
+# further dependencies manually.
+# find_package(<dependency> REQUIRED)
+
+set(dependencies
+  rclcpp
+  std_msgs
+  std_srvs
+  geometry_msgs
+  sensor_msgs
+  geographic_msgs
+  nav_msgs
+  robot_localization
+  tf2_ros
+  tf2
+  tf2_geometry_msgs
+
 )
 
-###########
-## Build ##
-###########
+include_directories(include
+  # ${EIGEN3_INCLUDE_DIR}
+)
+set(library_name ${PROJECT_NAME})
 
-## Specify additional locations of header files
-## Your package locations should be listed before other locations
-include_directories(
-  ${catkin_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIR}
+add_library(${library_name} SHARED 
+  include/mvp_localization_utilities/world_odom_transform.cpp
 )
 
-## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/alpha_localization.cpp
-# )
-
-## Add cmake target dependencies of the library
-## as an example, code may need to be generated before libraries
-## either from message generation or dynamic reconfigure
-# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-## Declare a C++ executable
-## With catkin_make all packages are built within a single CMake context
-## The recommended prefix ensures that target names across packages don't collide
-add_executable(depth_odometry_publisher src/depth_odometry_publisher.cpp)
-add_executable(pressure_to_depth_node src/pressure_to_depth_node.cpp)
-add_executable(imu_ned_to_enu src/imu_ned_enu.cpp)
-add_executable(world_odom_transform_node src/world_odom_transform.cpp)
-
-## Rename C++ executable without prefix
-## The above recommended prefix causes long target names, the following renames the
-## target back to the shorter version for ease of user use
-## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
-# set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
-
-## Add cmake target dependencies of the executable
-## same as for the library above
-add_dependencies(depth_odometry_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(pressure_to_depth_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(imu_ned_to_enu ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(world_odom_transform_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-## Specify libraries to link a library or executable target against
-target_link_libraries(depth_odometry_publisher
-  ${catkin_LIBRARIES}
+ament_target_dependencies(
+  ${library_name} 
+  ${dependencies} 
 )
 
-target_link_libraries(pressure_to_depth_node
-  ${catkin_LIBRARIES}
-)
+add_executable(world_odom_transform_node src/world_odom_transform_node.cpp)
+target_link_libraries(world_odom_transform_node ${library_name} ${GeographicLib_LIBRARIES})
+ament_target_dependencies(world_odom_transform_node ${dependencies})
 
-target_link_libraries(imu_ned_to_enu
-  ${catkin_LIBRARIES}
+install(TARGETS world_odom_transform_node ${library_name}
+ARCHIVE DESTINATION lib
+LIBRARY DESTINATION lib
+RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
 
-target_link_libraries(world_odom_transform_node
-  ${catkin_LIBRARIES}
+install(DIRECTORY include/
+DESTINATION include/
 )
+
+ament_export_include_directories(include)
+ament_export_libraries(${library_name})
+ament_export_dependencies(${dependencies})
+
+##launch files
+install(DIRECTORY
+  launch
+  DESTINATION share/${PROJECT_NAME}
+)
+
+install(DIRECTORY 
+  config 
+  DESTINATION share/${PROJECT_NAME}
+)
+
+ament_package()
