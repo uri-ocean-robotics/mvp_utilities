@@ -51,20 +51,20 @@ class WorldOdomTransform : public rclcpp::Node
         rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr reset_datum_server;
 
         //service call
-        void f_cb_fromLL_srv(
+        bool f_cb_fromLL_srv(
             const std::shared_ptr<robot_localization::srv::FromLL::Request> request,
             const std::shared_ptr<robot_localization::srv::FromLL::Response> response);
 
-        void f_cb_toLL_srv(
+        bool f_cb_toLL_srv(
             const std::shared_ptr<robot_localization::srv::ToLL::Request> request,
             const std::shared_ptr<robot_localization::srv::ToLL::Response> response);
 
 
-        void f_cb_reset_tf_srv(
+        bool f_cb_reset_tf_srv(
             const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
             const std::shared_ptr<std_srvs::srv::Trigger::Response> response);
 
-        void f_cb_reset_datum_srv(
+        bool f_cb_reset_datum_srv(
             const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
             const std::shared_ptr<std_srvs::srv::Trigger::Response> response);
 

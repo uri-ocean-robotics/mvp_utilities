@@ -205,7 +205,7 @@ void WorldOdomTransform::f_cb_gps_fix(const sensor_msgs::msg::NavSatFix::SharedP
                 && m_gps.position_covariance[4]<m_acceptable_var
                 && m_gps.status.status>-1)
             {
-                // f_set_tf();
+                f_set_tf();
             }
             else{
                 // ROS_INFO("GPS fix covariance is not good");
@@ -219,47 +219,200 @@ void WorldOdomTransform::f_cb_gps_fix(const sensor_msgs::msg::NavSatFix::SharedP
 
 bool WorldOdomTransform::f_set_tf()
 {
+ //check the quality of the gps if the x and y variance is good enough?
 
+    geographic_msgs::msg::GeoPoint ll_point;
+    geometry_msgs::msg::Point::SharedPtr map_point;
+    nav_msgs::msg::Odometry m_odom_gps_temp = m_odom_gps;
+    geometry_msgs::msg::PoseWithCovarianceStamped m_depth_gps_temp = m_depth_gps;
+    sensor_msgs::msg::NavSatFix m_gps_temp = m_gps;
+
+    GeographicLib::MagneticModel magModel("wmm2020", m_mag_model_path);
+
+    
+    ll_point.latitude = m_gps_temp.latitude;
+    ll_point.longitude = m_gps_temp.longitude;
+    ll_point.altitude = m_gps_temp.altitude;
+    //Get x and y from lattiude and longitude. x->east, y->north
+    f_ll2dis(ll_point, map_point);
+    //get mag declination
+    double h, Bx, By, Bz;
+    double H, F, D, I;
+    magModel(2024, ll_point.latitude,ll_point.longitude, h, Bx, By, Bz);
+    GeographicLib::MagneticModel::FieldComponents(Bx, By, Bz, H, F, D, I);
+    //D is negative to west but we are in ENU frame.
+    if (m_mag_declination_auto)
+    {
+        m_mag_declination = -D *M_PI/180.0;
+    }
+    // Print the magnetic field components
+    //  printf("declination = %lf\r\n", D);
+    // printf("tf update\r\n");
+    transformStamped.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
+    transformStamped.header.frame_id = m_world_frame;
+    transformStamped.child_frame_id = m_odom_frame;
+
+    //convert odom xy into world first using magnetic declination
+    double odom_world_x = m_odom_gps_temp.pose.pose.position.x*cos(m_mag_declination) - m_odom_gps_temp.pose.pose.position.y*sin(m_mag_declination);
+    double odom_world_y = m_odom_gps_temp.pose.pose.position.x*sin(m_mag_declination) + m_odom_gps_temp.pose.pose.position.y*cos(m_mag_declination);
+
+    double dx =  map_point->x -odom_world_x;
+    double dy =  map_point->y - odom_world_y;
+    printf("gps fix in world =%lf, %lf\r\n", map_point->x, map_point->y);
+    printf("matching odom position= %lf, %lf\r\n", m_odom_gps_temp.pose.pose.position.x, m_odom_gps_temp.pose.pose.position.y);
+
+    transformStamped.transform.translation.x = dx;
+    transformStamped.transform.translation.y = dy;
+
+    if (m_use_depth_for_tf)
+    {
+    transformStamped.transform.translation.z = -m_depth_gps_temp.pose.pose.position.z + 0.0;
+    }
+    else{
+    transformStamped.transform.translation.z = -m_gps_temp.altitude + 0.0;
+    }
+
+    tf2::Quaternion q;
+    q.setRPY(0, 0, m_mag_declination);
+
+    transformStamped.transform.rotation.x = q.x();
+    transformStamped.transform.rotation.y = q.y();
+    transformStamped.transform.rotation.z = q.z();
+    transformStamped.transform.rotation.w = q.w();
+    transformStamped.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
+    br->sendTransform(transformStamped);
+    RCLCPP_INFO(get_logger(), "TF Between world and odom is set!");
+    m_tf_set = true;
+    return true;
 }
 
 
 void WorldOdomTransform::f_cb_odom(const nav_msgs::msg::Odometry::SharedPtr msg)
 {
+    m_odom = *msg;
+
+    if(m_tf_set)
+    {   
+        
+        //publishtf
+        transformStamped.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
+        br->sendTransform(transformStamped);
+        //convert odom from odom to world 
+        try {        
+            geometry_msgs::msg::TransformStamped tf_o2w = m_transform_buffer->lookupTransform(
+                    m_world_frame,
+                    m_odom_frame,
+                    tf2::TimePointZero,
+                    10ms
+                );
+            
+            geometry_msgs::msg::PoseStamped odom_pose, world_pose;
+            odom_pose.header = msg->header;
+            odom_pose.pose = msg->pose.pose;
+
+            // Transform the pose from odom frame to world frame
+            tf2::doTransform(odom_pose, world_pose, tf_o2w);
+            geometry_msgs::msg::Point map_point;
+            geographic_msgs::msg::GeoPoint::SharedPtr ll_point;
+            world_pose.header= msg->header;
+
+            map_point.x = world_pose.pose.position.x;
+            map_point.y = world_pose.pose.position.y;
+            map_point.z = world_pose.pose.position.z;
+
+            f_dis2ll(map_point, ll_point);
+            geographic_msgs::msg::GeoPoseStamped geopose;
+            geopose.pose.position.latitude = ll_point->latitude;
+            geopose.pose.position.longitude = ll_point->longitude;
+            geopose.pose.position.altitude = ll_point->altitude;
+            geopose.pose.orientation.x = world_pose.pose.orientation.x;
+            geopose.pose.orientation.y = world_pose.pose.orientation.y;
+            geopose.pose.orientation.z = world_pose.pose.orientation.z;
+            geopose.pose.orientation.w = world_pose.pose.orientation.w;
+            geopose.header= world_pose.header;
+            
+            m_geopose_publisher->publish(geopose);
+
+        } catch(tf2::TransformException &e) {
+            RCLCPP_WARN(get_logger(), "Can't get the tf from world to odom when computing geopose");
+            
+        }
+    }
 
 }
     
 void WorldOdomTransform::f_cb_depth(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg)
 {
-
+    m_depth = *msg;
 }
 
-void WorldOdomTransform::f_cb_fromLL_srv(
+bool WorldOdomTransform::f_cb_fromLL_srv(
             const std::shared_ptr<robot_localization::srv::FromLL::Request> request,
             const std::shared_ptr<robot_localization::srv::FromLL::Response> response)
 {
-
+    geometry_msgs::msg::Point::SharedPtr map_point;
+    f_ll2dis(request->ll_point, map_point);
+    response->map_point = *map_point;
+    return true;
 }
 
 
-void WorldOdomTransform::f_cb_toLL_srv(
+bool WorldOdomTransform::f_cb_toLL_srv(
             const std::shared_ptr<robot_localization::srv::ToLL::Request> request,
             const std::shared_ptr<robot_localization::srv::ToLL::Response> response)
-{
-
+{   
+    geographic_msgs::msg::GeoPoint::SharedPtr ll_point;
+    f_dis2ll(request->map_point, ll_point);
+    response->ll_point = *ll_point;
+    return true;
 }
 
 
-void WorldOdomTransform::f_cb_reset_tf_srv(
+bool WorldOdomTransform::f_cb_reset_tf_srv(
     const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
     const std::shared_ptr<std_srvs::srv::Trigger::Response> response)
 {
-
+    m_tf_set = false;
+    response->success = true;
+    response->message = "tf reset triggered";
+    return true;
 }
 
-void WorldOdomTransform::f_cb_reset_datum_srv(
+bool WorldOdomTransform::f_cb_reset_datum_srv(
     const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
     const std::shared_ptr<std_srvs::srv::Trigger::Response> response)
 {
+    m_datum_set = false;
+    m_tf_set = false;
+    //if the gps covariance is not small we will wait.
+    double  datum_reset_request_time = rclcpp::Clock(RCL_ROS_TIME).now().seconds();
+    while(rclcpp::Clock(RCL_ROS_TIME).now().seconds() - datum_reset_request_time < m_gps_wait_time)
+    {
+        RCLCPP_INFO(get_logger(), "Waiting for a good gps fix for datum");
+        if(m_gps_for_datum.position_covariance[0]<m_acceptable_var 
+            && m_gps_for_datum.position_covariance[4]<m_acceptable_var
+            && m_gps_for_datum.status.status>-1)
+        {
+            m_datum.latitude = m_gps_for_datum.latitude;
+            m_datum.longitude = m_gps_for_datum.longitude;
+            m_datum.altitude = m_gps_for_datum.altitude;
+            m_datum_set = true;
+            break;
+        }
+        sleep(1);
+    }
+
+    if(m_datum_set){
+        response->success = true;
+        response->message = "Datum reset done";
+        return true;
+    }
+    else{
+        response->success = false;
+        response->message = "Datum failed due to lack of good gps fix within the defined time";
+        return true;
+    }
+    return true;
 
 }
 
