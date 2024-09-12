@@ -146,8 +146,31 @@ void WorldOdomTransform::f_cb_gps_fix(const sensor_msgs::NavSatFix& msg)
 
     m_gps = msg;
     m_gps_for_datum = msg;
-    m_odom_gps = m_odom; //map the most recent odom;
+    // m_odom_gps = m_odom; //map the most recent odom;
+    //get gps location in the odom
+    auto tf_odom_gps = m_transform_buffer.lookupTransform(
+                    m_odom_frame,
+                    msg.header.frame_id,
+                    ros::Time(0),
+                    ros::Duration(0.1)
+                    );
+    
+    // auto tf_odom_gps = m_transform_buffer.lookupTransform(
+    //                 msg.header.frame_id,
+    //                 m_odom_frame,
+    //                 ros::Time(0)
+    //                 );
+
+    m_odom_gps.header = m_odom.header;
+    m_odom_gps.header.frame_id = msg.header.frame_id;
+    m_odom_gps.pose.pose.position.x = tf_odom_gps.transform.translation.x;
+    m_odom_gps.pose.pose.position.y = tf_odom_gps.transform.translation.y;
+    m_odom_gps.pose.pose.position.z = tf_odom_gps.transform.translation.z;
+    // Optional: fill the orientation
+    m_odom_gps.pose.pose.orientation = tf_odom_gps.transform.rotation;
+
     m_depth_gps = m_depth;
+
 
     if(m_datum_set)
     {
@@ -194,6 +217,7 @@ void WorldOdomTransform::f_cb_gps_fix(const sensor_msgs::NavSatFix& msg)
                 gps_odom.pose.pose.position.y = odom_pose.pose.position.y;
                 gps_odom.pose.pose.position.z = odom_pose.pose.position.z;
                 gps_odom.header.frame_id = m_odom_frame;
+                gps_odom.child_frame_id = msg.header.frame_id;
                 gps_odom.header.stamp = msg.header.stamp;
                 // gps_odom.pose.covariance[0] = pow(m_position_accuracy,2);
                 gps_odom.pose.covariance[0] = msg.position_covariance[0];
