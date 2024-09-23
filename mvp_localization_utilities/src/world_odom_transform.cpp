@@ -265,7 +265,7 @@ bool WorldOdomTransform::f_set_tf()
     geographic_msgs::GeoPoint ll_point;
     geometry_msgs::Point map_point;
     nav_msgs::Odometry m_odom_gps_temp = m_odom_gps;
-    geometry_msgs::PoseWithCovarianceStamped m_depth_gps_temp = m_depth_gps;
+    nav_msgs::Odometry m_depth_gps_temp = m_depth_gps;
     sensor_msgs::NavSatFix m_gps_temp = m_gps;
 
     GeographicLib::MagneticModel magModel("wmm2020", m_mag_model_path);
@@ -400,7 +400,12 @@ void WorldOdomTransform::f_cb_odom(const nav_msgs::Odometry& msg)
     }
 }
 
-void WorldOdomTransform::f_cb_depth(const geometry_msgs::PoseWithCovarianceStamped& msg)
+// void WorldOdomTransform::f_cb_depth(const geometry_msgs::PoseWithCovarianceStamped& msg)
+// {
+//     m_depth = msg;
+// }
+
+void WorldOdomTransform::f_cb_depth(const nav_msgs::Odometry& msg)
 {
     m_depth = msg;
 }

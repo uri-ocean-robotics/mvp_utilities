@@ -28,19 +28,23 @@ DepthOdomNode::DepthOdomNode() {
     m_pnh.reset(new ros::NodeHandle("~"));
 
     m_pnh->param<std::string>("frame_id", m_frame_id, "world");
+    m_pnh->param<std::string>("child_frame_id", m_child_frame_id, "pressure_sensor");
     m_pnh->param<double>("depth_covariance", m_depth_covariance, 0.0);
 
     m_depth_subscriber = m_nh->subscribe("depth", 10, &DepthOdomNode::f_depth_callback, this);
-    m_depth_publisher = m_nh->advertise<geometry_msgs::PoseWithCovarianceStamped>("depth/odometry", 10);
+    // m_depth_publisher = m_nh->advertise<geometry_msgs::PoseWithCovarianceStamped>("depth/odometry", 10);
+    m_depth_publisher = m_nh->advertise<nav_msgs::Odometry>("depth/odometry", 10);
 
 }
 
 void DepthOdomNode::f_depth_callback(const mvp_msgs::Float64StampedConstPtr &msg) {
 
-    geometry_msgs::PoseWithCovarianceStamped out;
+    // geometry_msgs::PoseWithCovarianceStamped out;
+    nav_msgs::Odometry out;
 
     out.header = msg->header;
     out.header.frame_id = m_frame_id;
+    out.child_frame_id = m_child_frame_id;
     out.pose.pose.position.x = 0.0;
     out.pose.pose.position.y = 0.0;
     out.pose.pose.position.z = -msg->data;

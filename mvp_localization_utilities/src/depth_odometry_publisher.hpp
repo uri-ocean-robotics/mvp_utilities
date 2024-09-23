@@ -25,6 +25,7 @@
 
 #include "ros/ros.h"
 #include "geometry_msgs/PoseWithCovarianceStamped.h"
+#include "nav_msgs/Odometry.h"
 #include "mvp_msgs/Float64Stamped.h"
 
 class DepthOdomNode{
@@ -40,6 +41,8 @@ private:
     ros::Subscriber m_depth_subscriber;
 
     std::string m_frame_id;
+    
+    std::string m_child_frame_id;
 
     double m_depth_covariance;
 

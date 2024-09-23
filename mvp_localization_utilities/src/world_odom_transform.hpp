@@ -88,7 +88,7 @@ private:
 
     nav_msgs::Odometry m_odom, m_odom_gps;
 
-    geometry_msgs::PoseWithCovarianceStamped m_depth, m_depth_gps;
+    nav_msgs::Odometry m_depth, m_depth_gps;
 
     sensor_msgs::NavSatFix m_gps;
 
@@ -132,7 +132,7 @@ private:
 
     void f_cb_odom(const nav_msgs::Odometry& msg);
     
-    void f_cb_depth(const geometry_msgs::PoseWithCovarianceStamped& msg);
+    void f_cb_depth(const nav_msgs::Odometry& msg);
 
     bool f_cb_reset_datum_srv(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &resp);
 
