@@ -29,7 +29,6 @@
 #include "robot_localization/FromLL.h"
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <geometry_msgs/TransformStamped.h>
-#include <tf2_ros/transform_listener.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 
 class WorldToWorldTransform{
@@ -47,8 +46,6 @@ private:
     std::string m_world_frame;
     std::string m_parent_world_frame;
     std::string m_child_world_frame;
-    std::string m_odom_frame;
-    std::string m_parent_odom_frame;
     std::string m_child_tf_prefix;
     std::string m_parent_tf_prefix;
     std::string m_child_datum_topic;
@@ -56,15 +53,11 @@ private:
 
     geometry_msgs::TransformStamped transformStamped;
     geometry_msgs::TransformStamped m_parent_world_to_child_world;
-    geometry_msgs::TransformStamped m_parent_world_to_parent_odom;
-    geometry_msgs::TransformStamped m_parent_odom_to_child_world;
 
     bool m_tf_set = false;
     bool m_publish_tf;
 
     tf2_ros::StaticTransformBroadcaster br;
-    tf2_ros::Buffer m_transform_buffer;
-    std::shared_ptr<tf2_ros::TransformListener> m_transform_listener;
 
     void f_cb_childdatum(const geographic_msgs::GeoPoint& msg);
     bool f_cb_reset_tf_srv(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &resp);
@@ -73,4 +66,3 @@ private:
 public:
     WorldToWorldTransform();
 };
-
