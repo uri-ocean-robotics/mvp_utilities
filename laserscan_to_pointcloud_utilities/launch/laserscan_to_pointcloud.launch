@@ -1,0 +1,16 @@
+<launch>
+
+    <arg name="robot_name" default="wamv"/>
+    <arg name="sensor_prefix" default="vlp16/stonefish/data"/>
+    <arg name="laserscan_name" default="scan"/>
+    <arg name="pointcloud_name" default="pointcloud"/>
+
+    <node ns="$(arg robot_name)/$(arg sensor_prefix)" pkg="laserscan_to_pointcloud_utilities" type="laserscan_to_pointcloud_node" name="laserscan_to_pointcloud" output="screen">
+        <param name="robot_name" value="$(arg robot_name)"/>
+        <param name="topic_name" value="$(arg robot_name)/$(arg sensor_prefix)"/>
+        <param name="laserscan_name" value="$(arg laserscan_name)"/>
+        <param name="pointcloud_name" value="$(arg pointcloud_name)"/>
+        <param name="rosconsole_logger_level" value="debug"/>
+    </node>
+
+</launch>
