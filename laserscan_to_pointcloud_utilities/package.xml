@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<package format="2">
+    <name>laserscan_to_pointcloud_utilities</name>
+    <version>0.0.0</version>
+    <description>The laserscan_to_pointcloud_utilities package</description>
+
+    <maintainer email="emircem@uri.edu">Emir Cem Gezer</maintainer>
+    <author email="ansel.austin@uri.edu">Ansel Austin</author>
+
+    <license>GPLv3</license>
+
+    <buildtool_depend>catkin</buildtool_depend>
+    <depend>roscpp</depend>
+    <depend>std_msgs</depend>
+    <depend>sensor_msgs</depend>
+    <depend>laser_geometry</depend>
+    <depend>tf2_ros</depend>
+    <depend>tf2_sensor_msgs</depend>
+
+    <!-- <build_depend>message_generation</build_depend>
+    <exec_depend>message_runtime</exec_depend> -->
+
+    <!-- <exec_depend>roscpp</exec_depend>
+    <exec_depend>rospy</exec_depend>
+    <exec_depend>std_msgs</exec_depend> -->
+        
+    <export>
+
+    </export>
+</package>
