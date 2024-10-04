@@ -14,8 +14,8 @@
     You should have received a copy of the GNU General Public License
     along with the project.  If not, see <https://www.gnu.org/licenses/>.
 
-    Author: Mingxi Zhou
-    Email: mzhou@uri.edu
+    Author: Ansel Austin
+    Email: ansel.austin@uri.edu
     Year: 2024
 
     Copyright (C) 2024 Smart Ocean Systems Laboratory
@@ -46,8 +46,8 @@ private:
     std::string m_world_frame;
     std::string m_parent_world_frame;
     std::string m_child_world_frame;
-    std::string m_child_tf_prefix;
-    std::string m_parent_tf_prefix;
+    std::string m_child_name;
+    std::string m_parent_name;
     std::string m_child_datum_topic;
     std::string m_parent_fromLL_srv_name;
 
@@ -59,7 +59,7 @@ private:
 
     tf2_ros::StaticTransformBroadcaster br;
 
-    void f_cb_childdatum(const geographic_msgs::GeoPoint& msg);
+    void f_cb_child_datum(const geographic_msgs::GeoPoint& msg);
     bool f_cb_reset_tf_srv(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &resp);
     bool f_set_tf();
 

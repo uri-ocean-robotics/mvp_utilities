@@ -1,26 +1,21 @@
+<?xml version="1.0"?>
+<!--
+    This file is part of ALPHA AUV project.
+
+    Author: Ansel Austin
+    Email: ansel.austin@uri.edu
+    Year: 2024
+
+    Copyright (C) 2022 Smart Ocean Systems Laboratory
+-->
 <launch>
 
-    <arg name="child_name" value="alpha_rise"/>
-    <arg name="parent_name" value="wamv"/>
+    <arg name="parent_name" default="wamv"/>
+    <arg name="child_name" default="alpha_rise"/>
 
     <node ns="$(arg parent_name)" pkg="mvp_localization_utilities" type="world_to_world_transform_node" name="world_to_world_tf" output="screen">
-        <param name = "child_tf_prefix" value="$(arg child_name)"/>
-        <param name = "parent_tf_prefix" value="$(arg parent_name)"/>
-        <!-- <param name = "mag_declination" value="0.2" /> -->
-        <param name = "acceptable_var" value = "5" />
-        <param name = "m_gps_wait_time" value ="5"/>
-        <!-- beach_pond -->
-        <!-- <param name = "datum_latitude" value="41.574236666666664"/> -->
-        <!-- <param name = "datum_longitude" value="-71.787575"/> -->
-        <!-- allen harbor -->
-        <!-- <param name = "datum_latitude" value="41.621601667"/> -->
-        <!-- <param name = "datum_longitude" value="-71.411018333"/> -->
-        <param name = "datum_latitude" value="41.6216"/>
-        <param name = "datum_longitude" value="-71.41095"/>
-        <param name = "position_accuracy" value="3.0"/>
-        <remap from = "odometry" to ="odometry/filtered/local" />
+        <param name = "child_name" value="$(arg child_name)"/>
+        <param name = "parent_name" value="$(arg parent_name)"/>
     </node>
-
-
 
 </launch>

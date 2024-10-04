@@ -14,8 +14,8 @@
     You should have received a copy of the GNU General Public License
     along with the project.  If not, see <https://www.gnu.org/licenses/>.
 
-    Author: Mingxi Zhou
-    Email: mzhou
+    Author: Ansel Austin
+    Email: ansel.austin@uri.edu
     Year: 2024
 
     Copyright (C) 2024 Smart Ocean Systems Laboratory
@@ -31,22 +31,22 @@ WorldToWorldTransform::WorldToWorldTransform() {
     
     // Load parameters from the parameter server
     m_pnh->param<std::string>("world", m_world_frame, "world");
-    m_pnh->param<std::string>("child_tf_prefix", m_child_tf_prefix, "");
-    m_pnh->param<std::string>("parent_tf_prefix", m_parent_tf_prefix, "");
+    m_pnh->param<std::string>("child_name", m_child_name, "");
+    m_pnh->param<std::string>("parent_name", m_parent_name, "");
     m_pnh->param<bool>("publish_tf", m_publish_tf, true);
 
     // Initialize frames and flags
     m_tf_set = false;
-    m_parent_world_frame = m_parent_tf_prefix + "/" + m_world_frame;
-    m_child_world_frame = m_child_tf_prefix + "/" + m_world_frame;
-    m_child_datum_topic = "/" + m_child_tf_prefix + "/gps/datum";
+    m_parent_world_frame = m_parent_name + "/" + m_world_frame;
+    m_child_world_frame = m_child_name + "/" + m_world_frame;
+    m_child_datum_topic = "/" + m_child_name + "/gps/datum";
 
     // Subscribe to the child datum topic
     m_child_datum_subscriber = m_nh->subscribe(m_child_datum_topic, 10, 
-                                               &WorldToWorldTransform::f_cb_childdatum, this);
+                                               &WorldToWorldTransform::f_cb_child_datum, this);
 
     // Create a client for parent/fromLL service
-    m_parent_fromLL_srv_name = "/" + m_parent_tf_prefix + "/fromLL";
+    m_parent_fromLL_srv_name = "/" + m_parent_name + "/fromLL";
     m_parent_fromLL_client = m_nh->serviceClient<robot_localization::FromLL>(m_parent_fromLL_srv_name);
 
     // Initialize reset tf service
@@ -92,7 +92,7 @@ bool WorldToWorldTransform::f_set_tf() {
     return true;
 }
 
-void WorldToWorldTransform::f_cb_childdatum(const geographic_msgs::GeoPoint& msg) {
+void WorldToWorldTransform::f_cb_child_datum(const geographic_msgs::GeoPoint& msg) {
     m_child_datum = msg;
     f_set_tf();
 }
