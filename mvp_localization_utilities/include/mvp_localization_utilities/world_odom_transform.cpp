@@ -137,7 +137,7 @@ void WorldOdomTransform::f_cb_gps_fix(const sensor_msgs::msg::NavSatFix::SharedP
     m_gps_for_datum = *msg;
 
     m_depth_gps = m_depth;
-    
+
     // m_odom_gps = m_odom; //map the most recent odom;
 
         // m_odom_gps = m_odom; //map the most recent odom;
@@ -382,7 +382,7 @@ bool WorldOdomTransform::f_cb_fromLL_srv(
             const std::shared_ptr<robot_localization::srv::FromLL::Request> request,
             const std::shared_ptr<robot_localization::srv::FromLL::Response> response)
 {
-    geometry_msgs::msg::Point::SharedPtr map_point;
+    geometry_msgs::msg::Point::SharedPtr map_point = std::make_shared<geometry_msgs::msg::Point>();
     f_ll2dis(request->ll_point, map_point);
     response->map_point = *map_point;
     return true;
@@ -393,7 +393,7 @@ bool WorldOdomTransform::f_cb_toLL_srv(
             const std::shared_ptr<robot_localization::srv::ToLL::Request> request,
             const std::shared_ptr<robot_localization::srv::ToLL::Response> response)
 {   
-    geographic_msgs::msg::GeoPoint::SharedPtr ll_point;
+    geographic_msgs::msg::GeoPoint::SharedPtr ll_point = std::make_shared<geographic_msgs::msg::GeoPoint>();
     f_dis2ll(request->map_point, ll_point);
     response->ll_point = *ll_point;
     return true;
