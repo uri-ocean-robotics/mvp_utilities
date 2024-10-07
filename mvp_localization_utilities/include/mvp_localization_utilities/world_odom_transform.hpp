@@ -18,6 +18,7 @@
 
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "tf2_ros/static_transform_broadcaster.h"
+// #include <tf2_ros/transform_broadcaster.h>
 
 class WorldOdomTransform : public rclcpp::Node
 {
@@ -35,13 +36,13 @@ class WorldOdomTransform : public rclcpp::Node
         //subscriber
         rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr m_gps_fix_subscriber;
         rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr m_odom_subscriber;
-        rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr m_depth_subscriber;
+        rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr m_depth_subscriber;
 
         void f_cb_gps_fix(const sensor_msgs::msg::NavSatFix::SharedPtr msg);
 
         void f_cb_odom(const nav_msgs::msg::Odometry::SharedPtr msg);
     
-        void f_cb_depth(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);
+        void f_cb_depth(const nav_msgs::msg::Odometry::SharedPtr msg);
 
 
         //service
@@ -74,7 +75,7 @@ class WorldOdomTransform : public rclcpp::Node
 
         nav_msgs::msg::Odometry m_odom, m_odom_gps;
 
-        geometry_msgs::msg::PoseWithCovarianceStamped m_depth, m_depth_gps;
+        nav_msgs::msg::Odometry m_depth, m_depth_gps;
 
         sensor_msgs::msg::NavSatFix m_gps;
 
@@ -83,6 +84,8 @@ class WorldOdomTransform : public rclcpp::Node
         std::string m_world_frame;
 
         std::string m_odom_frame;
+
+        std::string m_gps_frame;
         
         std::string m_tf_prefix;
 

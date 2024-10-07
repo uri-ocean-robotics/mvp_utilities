@@ -25,7 +25,10 @@ WorldOdomTransform::WorldOdomTransform(std::string name) : Node(name)
     this->get_parameter("world", m_world_frame);
 
     this->declare_parameter("odom", "odom");
-    this->get_parameter("world", m_odom_frame);
+    this->get_parameter("odom", m_odom_frame);
+
+    this->declare_parameter("gps_frame", "gps");
+    this->get_parameter("gps_frame", m_gps_frame);
 
     this->declare_parameter("tf_prefix", "");
     this->get_parameter("tf_prefix", m_tf_prefix);
@@ -44,10 +47,6 @@ WorldOdomTransform::WorldOdomTransform(std::string name) : Node(name)
 
     this->declare_parameter("position_accuracy", 0.0);
     this->get_parameter("position_accuracy", m_position_accuracy);
-
-    this->declare_parameter("max_gps_wait_time", 60.0);
-    this->get_parameter("max_gps_wait_time", m_gps_wait_time);
-
 
     this->declare_parameter("max_gps_wait_time", 60.0);
     this->get_parameter("max_gps_wait_time", m_gps_wait_time);
@@ -85,7 +84,7 @@ WorldOdomTransform::WorldOdomTransform(std::string name) : Node(name)
     m_tf_set = false;
     m_world_frame = m_tf_prefix + "/" + m_world_frame;
     m_odom_frame = m_tf_prefix + "/" + m_odom_frame;
-
+    m_gps_frame = m_tf_prefix + "/" + m_gps_frame;
     //publisher
     m_gps_odom_publisher = this->create_publisher<nav_msgs::msg::Odometry>("gps/odometry", 10);
     m_datum_publisher = this->create_publisher<geographic_msgs::msg::GeoPoint>("gps/datum", 10);
@@ -98,7 +97,7 @@ WorldOdomTransform::WorldOdomTransform(std::string name) : Node(name)
     m_odom_subscriber = this->create_subscription<nav_msgs::msg::Odometry>("odometry", 10, 
                                                                 std::bind(&WorldOdomTransform::f_cb_odom, 
                                                                 this, _1));
-    m_depth_subscriber = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>("depth/odometry", 10, 
+    m_depth_subscriber = this->create_subscription<nav_msgs::msg::Odometry>("depth", 10, 
                                                                 std::bind(&WorldOdomTransform::f_cb_depth, 
                                                                 this, _1));
     
@@ -121,20 +120,44 @@ WorldOdomTransform::WorldOdomTransform(std::string name) : Node(name)
 
     m_transform_buffer = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     m_transform_listener = std::make_unique<tf2_ros::TransformListener>(*m_transform_buffer);
+    br = std::make_unique<tf2_ros::StaticTransformBroadcaster>(*this);
+    printf("initialization done \r\n");
         
 }
 
 void WorldOdomTransform::f_cb_gps_fix(const sensor_msgs::msg::NavSatFix::SharedPtr msg)
 {
-     //compute the latitude longitude in the world frame using datum.
-    geometry_msgs::msg::Point::SharedPtr map_point;
+    //  compute the latitude longitude in the world frame using datum.
+    geometry_msgs::msg::Point::SharedPtr map_point = std::make_shared<geometry_msgs::msg::Point>();
     nav_msgs::msg::Odometry gps_odom;
     geographic_msgs::msg::GeoPoint ll_point;
 
     m_gps = *msg;
+
     m_gps_for_datum = *msg;
-    m_odom_gps = m_odom; //map the most recent odom;
+
     m_depth_gps = m_depth;
+    
+    // m_odom_gps = m_odom; //map the most recent odom;
+
+        // m_odom_gps = m_odom; //map the most recent odom;
+    //get gps location in the odom
+    geometry_msgs::msg::TransformStamped tf_odom_gps = m_transform_buffer->lookupTransform(
+                    m_odom_frame,
+                    msg->header.frame_id,
+                    tf2::TimePointZero,
+                    10ms
+                );
+    m_odom_gps.header = m_odom.header;
+    m_odom_gps.child_frame_id = msg->header.frame_id;
+    m_odom_gps.pose.pose.position.x = tf_odom_gps.transform.translation.x;
+    m_odom_gps.pose.pose.position.y = tf_odom_gps.transform.translation.y;
+    m_odom_gps.pose.pose.position.z = tf_odom_gps.transform.translation.z;
+    // Optional: fill the orientation
+    m_odom_gps.pose.pose.orientation = tf_odom_gps.transform.rotation;
+
+
+    
 
     if(m_datum_set)
     {
@@ -180,6 +203,7 @@ void WorldOdomTransform::f_cb_gps_fix(const sensor_msgs::msg::NavSatFix::SharedP
                 gps_odom.pose.pose.position.z = odom_pose.pose.position.z;
                 gps_odom.header.frame_id = m_odom_frame;
                 gps_odom.header.stamp = msg->header.stamp;
+                gps_odom.child_frame_id = msg->header.frame_id;
                 gps_odom.pose.covariance[0] = msg->position_covariance[0];
                 gps_odom.pose.covariance[1] = 0;
                 gps_odom.pose.covariance[2] = 0;
@@ -205,6 +229,7 @@ void WorldOdomTransform::f_cb_gps_fix(const sensor_msgs::msg::NavSatFix::SharedP
                 && m_gps.position_covariance[4]<m_acceptable_var
                 && m_gps.status.status>-1)
             {
+                // printf("good gps \r\n");
                 f_set_tf();
             }
             else{
@@ -222,20 +247,22 @@ bool WorldOdomTransform::f_set_tf()
  //check the quality of the gps if the x and y variance is good enough?
 
     geographic_msgs::msg::GeoPoint ll_point;
-    geometry_msgs::msg::Point::SharedPtr map_point;
+    // geometry_msgs::msg::Point::SharedPtr map_point;
     nav_msgs::msg::Odometry m_odom_gps_temp = m_odom_gps;
-    geometry_msgs::msg::PoseWithCovarianceStamped m_depth_gps_temp = m_depth_gps;
+    nav_msgs::msg::Odometry m_depth_gps_temp = m_depth_gps;
     sensor_msgs::msg::NavSatFix m_gps_temp = m_gps;
 
-    GeographicLib::MagneticModel magModel("wmm2020", m_mag_model_path);
+    geometry_msgs::msg::Point::SharedPtr map_point = std::make_shared<geometry_msgs::msg::Point>();
 
+    GeographicLib::MagneticModel magModel("wmm2020", m_mag_model_path);
+    printf("set tf function \r\n");
     
     ll_point.latitude = m_gps_temp.latitude;
     ll_point.longitude = m_gps_temp.longitude;
     ll_point.altitude = m_gps_temp.altitude;
     //Get x and y from lattiude and longitude. x->east, y->north
     f_ll2dis(ll_point, map_point);
-    //get mag declination
+    // //get mag declination
     double h, Bx, By, Bz;
     double H, F, D, I;
     magModel(2024, ll_point.latitude,ll_point.longitude, h, Bx, By, Bz);
@@ -248,9 +275,11 @@ bool WorldOdomTransform::f_set_tf()
     // Print the magnetic field components
     //  printf("declination = %lf\r\n", D);
     // printf("tf update\r\n");
+
     transformStamped.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
     transformStamped.header.frame_id = m_world_frame;
     transformStamped.child_frame_id = m_odom_frame;
+
 
     //convert odom xy into world first using magnetic declination
     double odom_world_x = m_odom_gps_temp.pose.pose.position.x*cos(m_mag_declination) - m_odom_gps_temp.pose.pose.position.y*sin(m_mag_declination);
@@ -272,6 +301,7 @@ bool WorldOdomTransform::f_set_tf()
     transformStamped.transform.translation.z = -m_gps_temp.altitude + 0.0;
     }
 
+    printf("translation in z =%lf\r\n", transformStamped.transform.translation.z);
     tf2::Quaternion q;
     q.setRPY(0, 0, m_mag_declination);
 
@@ -281,6 +311,7 @@ bool WorldOdomTransform::f_set_tf()
     transformStamped.transform.rotation.w = q.w();
     transformStamped.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
     br->sendTransform(transformStamped);
+    // printf("%s to %s\r\n", m_world_frame.c_str(), m_odom_frame.c_str());
     RCLCPP_INFO(get_logger(), "TF Between world and odom is set!");
     m_tf_set = true;
     return true;
@@ -289,8 +320,9 @@ bool WorldOdomTransform::f_set_tf()
 
 void WorldOdomTransform::f_cb_odom(const nav_msgs::msg::Odometry::SharedPtr msg)
 {
+    // printf("got odometry\r\n");
     m_odom = *msg;
-
+    // printf("got odometry\r\n");
     if(m_tf_set)
     {   
         
@@ -313,7 +345,7 @@ void WorldOdomTransform::f_cb_odom(const nav_msgs::msg::Odometry::SharedPtr msg)
             // Transform the pose from odom frame to world frame
             tf2::doTransform(odom_pose, world_pose, tf_o2w);
             geometry_msgs::msg::Point map_point;
-            geographic_msgs::msg::GeoPoint::SharedPtr ll_point;
+            geographic_msgs::msg::GeoPoint::SharedPtr ll_point = std::make_shared<geographic_msgs::msg::GeoPoint>();
             world_pose.header= msg->header;
 
             map_point.x = world_pose.pose.position.x;
@@ -341,7 +373,7 @@ void WorldOdomTransform::f_cb_odom(const nav_msgs::msg::Odometry::SharedPtr msg)
 
 }
     
-void WorldOdomTransform::f_cb_depth(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg)
+void WorldOdomTransform::f_cb_depth(const nav_msgs::msg::Odometry::SharedPtr msg)
 {
     m_depth = *msg;
 }
