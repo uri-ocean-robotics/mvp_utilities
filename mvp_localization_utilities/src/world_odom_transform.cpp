@@ -162,7 +162,8 @@ void WorldOdomTransform::f_cb_gps_fix(const sensor_msgs::NavSatFix& msg)
     //                 );
 
     m_odom_gps.header = m_odom.header;
-    m_odom_gps.header.frame_id = msg.header.frame_id;
+    m_odom_gps.header.frame_id = m_odom_frame;
+    m_odom_gps.child_frame_id = msg.header.frame_id;
     m_odom_gps.pose.pose.position.x = tf_odom_gps.transform.translation.x;
     m_odom_gps.pose.pose.position.y = tf_odom_gps.transform.translation.y;
     m_odom_gps.pose.pose.position.z = tf_odom_gps.transform.translation.z;
