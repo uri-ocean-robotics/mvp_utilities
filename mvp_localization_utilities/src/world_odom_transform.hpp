@@ -68,6 +68,8 @@ private:
 
     ros::Publisher m_geopose_publisher;
 
+    ros::Publisher m_odom_navsat_publisher;
+
 
     ros::Subscriber m_gps_fix_subscriber;
 
@@ -105,6 +107,8 @@ private:
     bool m_datum_set = false;
 
     bool m_tf_set = false;
+
+    bool m_publish_odom_navsat = true;
 
     bool m_use_depth_for_tf = true;
 

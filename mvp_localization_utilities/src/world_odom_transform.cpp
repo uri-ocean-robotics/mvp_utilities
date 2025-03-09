@@ -44,6 +44,8 @@ WorldOdomTransform::WorldOdomTransform(){
 
     m_pnh->param<bool>("use_depth_for_tf", m_use_depth_for_tf, true);
 
+    m_pnh->param<bool>("publish_odom_navsatfix", m_publish_odom_navsat, true);
+
     m_pnh->param<double>("acceptable_var", m_acceptable_var, 0.0);
 
     m_pnh->param<double>("position_accuracy", m_position_accuracy, 0.0);
@@ -83,6 +85,7 @@ WorldOdomTransform::WorldOdomTransform(){
 
     m_geopose_publisher = m_nh->advertise<geographic_msgs::GeoPoseStamped>("odometry/geopose",10);
 
+    m_odom_navsat_publisher = m_nh->advertise<sensor_msgs::NavSatFix>("odometry/navsatfix",10);
 
     m_gps_fix_subscriber = m_nh->subscribe("gps/fix", 10, 
                                 &WorldOdomTransform::f_cb_gps_fix, this);
@@ -330,9 +333,7 @@ bool WorldOdomTransform::f_set_tf()
     // try {        
     //     auto tf_w2o = m_transform_buffer.lookupTransform(
     //         m_odom_frame,
-    //         m_world_frame,
-    //         ros::Time(0),
-    //         ros::Duration(1)
+    //         m_world_frame,m_publish_navsat
     //     );
 
     //     auto tf_eigen = tf2::transformToEigen(tf_w2o);
@@ -393,8 +394,34 @@ void WorldOdomTransform::f_cb_odom(const nav_msgs::Odometry& msg)
             geopose.pose.orientation.z = world_pose.pose.orientation.z;
             geopose.pose.orientation.w = world_pose.pose.orientation.w;
             geopose.header= world_pose.header;
+            geopose.header.frame_id = msg.child_frame_id;  //geopose should be the base link
             
             m_geopose_publisher.publish(geopose);
+
+            //publish navsatfix for odometry
+            if(m_publish_odom_navsat)
+            {
+                sensor_msgs::NavSatFix odom_navsatfix;
+                odom_navsatfix.header = world_pose.header;
+                odom_navsatfix.header.frame_id = msg.child_frame_id;
+                odom_navsatfix.status.status = 0;
+                odom_navsatfix.status.service = 1;
+                odom_navsatfix.latitude = geopose.pose.position.latitude;
+                odom_navsatfix.longitude = geopose.pose.position.longitude;
+                odom_navsatfix.altitude = geopose.pose.position.altitude;
+                odom_navsatfix.position_covariance[0] = msg.pose.covariance[0];
+                odom_navsatfix.position_covariance[1] = msg.pose.covariance[1];
+                odom_navsatfix.position_covariance[2] = msg.pose.covariance[2];
+                odom_navsatfix.position_covariance[3] = msg.pose.covariance[6];
+                odom_navsatfix.position_covariance[4] = msg.pose.covariance[7];
+                odom_navsatfix.position_covariance[5] = msg.pose.covariance[8];
+                odom_navsatfix.position_covariance[6] = msg.pose.covariance[12];
+                odom_navsatfix.position_covariance[7] = msg.pose.covariance[13];
+                odom_navsatfix.position_covariance[8] = msg.pose.covariance[14];
+                odom_navsatfix.position_covariance_type = 1;
+                m_odom_navsat_publisher.publish(odom_navsatfix);
+            } 
+
 
         } catch(tf2::TransformException &e) {
             ROS_WARN_STREAM_THROTTLE(10, std::string("Can't get the tf from world to odom") + e.what());
