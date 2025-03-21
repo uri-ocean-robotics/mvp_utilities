@@ -11,7 +11,20 @@ class ROSLaunchNode:
         rospy.init_node('roslaunch_manager')
         self.launch_files = ''
         # Create an instance of ROSLaunchManager
-        self.launch_manager = ROSLaunchManager()
+        self.udp_srv_ip = rospy.get_param('~udp_srv_ip', '')
+        self.udp_srv_port = rospy.get_param('~udp_port', 5000)
+        if not self.udp_srv_ip:
+            try:
+            # Connect to an external server (Google DNS)
+                self.sock.connect(('8.8.8.8', 80))
+                local_ip = self.sock.getsockname()[0]  # Get the local address used for the connection
+            except Exception:
+                local_ip = '127.0.0.1'  # Fallback to localhost if no connection can be made
+            print(local_ip)
+
+
+
+        self.launch_manager = ROSLaunchManager(self.udp_srv_ip, self.udp_srv_port)
 
         # Advertise services
         self.set_roslaunch_srv = rospy.Service('set_launch', SetLaunch, self.f_set_launch_cb)

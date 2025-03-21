@@ -6,23 +6,16 @@ import signal
 import psutil  
 import socket
 import sys
-
+import select
 
 class ROSLaunchManager:
-    def __init__(self):
+    def __init__(self, local_ip, port_num):
         self.node_processes = {}
         self.lock = threading.Lock()
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        try:
-        # Connect to an external server (Google DNS)
-            self.sock.connect(('8.8.8.8', 80))
-            local_ip = self.sock.getsockname()[0]  # Get the local address used for the connection
-        except Exception:
-            local_ip = '127.0.0.1'  # Fallback to localhost if no connection can be made
-        print(local_ip)
         self.udp_ip = local_ip
-        self.udp_port = 3000
+        self.udp_port = port_num
         
         self.sock.setblocking(False)  # This makes the socket non-blocking
         self.running = True  # Flag to control the thread
@@ -67,22 +60,29 @@ class ROSLaunchManager:
 
 
     def _stream_output(self, pipe):
-        while self.running:  # Keep running while the 'running' flag is True
-            line = pipe.readline()
-            
-            if line:
-                print(line.strip())  # Print the line if it's not empty
-                self.sock.sendto(line.encode(), (self.udp_ip, self.udp_port))  # Send via UDP
-                # sys.stdout.flush()
-                # Warning condition
-                if 'WARNING' in line.upper():
-                    print(f"Warning: {line.strip()}")  # Print the warning
-                elif 'ERROR' in line.upper():
-                    print(f"Error: {line.strip()}")  # Print the error
+        heartbeat_interval = 5.0
+        last_heartbeat_time = time.time()
 
+        while self.running:
+            rlist, _, _ = select.select([pipe], [], [], 0.1)  # timeout of 0.1 seconds
+            if rlist:
+                line = pipe.readline()
+                if line:
+                    print(line.strip())
+                    self.sock.sendto(line.encode(), (self.udp_ip, self.udp_port))
+
+                    if 'WARNING' in line.upper():
+                        print(f"Warning: {line.strip()}")
+                    elif 'ERROR' in line.upper():
+                        print(f"Error: {line.strip()}")
             else:
-                # If the line is empty, you can introduce a small delay to avoid tight looping
-                time.sleep(0.1)  # This allows the loop to check periodically for new lines
+                # No new line ready — time to maybe print heartbeat
+                current_time = time.time()
+                if current_time - last_heartbeat_time >= heartbeat_interval:
+                    data = "[Stream still active...]\r\n"
+                    self.sock.sendto(data.encode(), (self.udp_ip, self.udp_port))
+                    # print("[Stream still active...]")
+                    last_heartbeat_time = current_time
 
         pipe.close()  # Close pipe once we're done
         print("Stream finished.")
