@@ -1,0 +1,9 @@
+<launch>
+
+  <arg name="robot_name" default="alpha_rise"/>
+
+  <node ns="$(arg robot_name)" pkg="mvp_roslaunch_manager" type="roslaunch_manager_node.py" 
+        name="roslaunch_manager_node" output="screen">
+  </node>
+
+</launch>
