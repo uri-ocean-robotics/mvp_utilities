@@ -46,6 +46,7 @@ class ROSLaunchManager:
 
             self.node_processes[key] = process
             print(f"Started launch file [{launch_file}].")
+            self.running = True  # Flag to control the thread
 
             # Start a thread to handle output streaming
             output_thread = threading.Thread(target=self._stream_output, args=(process.stdout,))
@@ -56,6 +57,7 @@ class ROSLaunchManager:
             error_thread = threading.Thread(target=self._stream_output, args=(process.stderr,))
             error_thread.daemon = True
             error_thread.start()
+    
 
 
 
@@ -64,7 +66,7 @@ class ROSLaunchManager:
         last_heartbeat_time = time.time()
 
         while self.running:
-            rlist, _, _ = select.select([pipe], [], [], 0.1)  # timeout of 0.1 seconds
+            rlist, _, _ = select.select([pipe], [], [], 0.01)  # timeout of 0.1 seconds
             if rlist:
                 line = pipe.readline()
                 if line:
@@ -84,6 +86,7 @@ class ROSLaunchManager:
                     # print("[Stream still active...]")
                     last_heartbeat_time = current_time
 
+            # time.sleep(0.01)  # Sleep to reduce CPU usage
         pipe.close()  # Close pipe once we're done
         print("Stream finished.")
 
@@ -102,6 +105,10 @@ class ROSLaunchManager:
                     print(f"Stopped launch file [{launch_file}].", flush=True)
                 except psutil.NoSuchProcess:
                     print(f"Process for launch file [{launch_file}] not found.", flush=True)
+
+                if not self.node_processes:  # All launches stopped
+                    self.running = False
+                    print("All launch files stopped — shutting down output threads.")
             else:
                 print(f"Launch file [{launch_file}] is not running.", flush=True)
 
