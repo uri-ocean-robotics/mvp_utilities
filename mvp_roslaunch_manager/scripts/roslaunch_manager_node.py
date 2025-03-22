@@ -13,6 +13,8 @@ class ROSLaunchNode:
         # Create an instance of ROSLaunchManager
         self.udp_srv_ip = rospy.get_param('~udp_srv_ip', '')
         self.udp_srv_port = rospy.get_param('~udp_port', 5000)
+        self.udp_stream_enable = rospy.get_param('~udp_stream_enable', False)
+
         if not self.udp_srv_ip:
             try:
             # Connect to an external server (Google DNS)
@@ -23,8 +25,7 @@ class ROSLaunchNode:
             print(local_ip)
 
 
-
-        self.launch_manager = ROSLaunchManager(self.udp_srv_ip, self.udp_srv_port)
+        self.launch_manager = ROSLaunchManager(self.udp_srv_ip, self.udp_srv_port, self.udp_stream_enable)
 
         # Advertise services
         self.set_roslaunch_srv = rospy.Service('set_launch', SetLaunch, self.f_set_launch_cb)

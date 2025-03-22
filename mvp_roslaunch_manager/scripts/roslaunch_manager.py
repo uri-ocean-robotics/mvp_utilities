@@ -9,16 +9,18 @@ import sys
 import select
 
 class ROSLaunchManager:
-    def __init__(self, local_ip, port_num):
+    def __init__(self, local_ip, port_num, udp_stream):
         self.node_processes = {}
         self.lock = threading.Lock()
+        self.udp_stream = udp_stream
 
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.udp_ip = local_ip
-        self.udp_port = port_num
-        
-        self.sock.setblocking(False)  # This makes the socket non-blocking
-        self.running = True  # Flag to control the thread
+        if self.udp_stream:
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.udp_ip = local_ip
+            self.udp_port = port_num
+            
+            self.sock.setblocking(False)  # This makes the socket non-blocking
+            self.running = True  # Flag to control the thread
 
 
     def start_launch(self, launch_file):
@@ -31,33 +33,32 @@ class ROSLaunchManager:
             if 'ROS_NAMESPACE' in env:
                 del env['ROS_NAMESPACE']
 
-            # process = subprocess.Popen(['roslaunch', str(launch_file)], env=env)
-            # self.node_processes[key] = process
-            # print(f"Started launch file [{launch_file}].")
+            if self.udp_stream:
+                process = subprocess.Popen(
+                    ['roslaunch', launch_file],
+                    env=env,  # You can modify environment variables here
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True  # Ensure you get strings instead of bytes
+                )
 
-            ##testing udp
-            process = subprocess.Popen(
-                ['roslaunch', launch_file],
-                env=env,  # You can modify environment variables here
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True  # Ensure you get strings instead of bytes
-            )
+                self.node_processes[key] = process
+                print(f"Started launch file [{launch_file}].")
+                self.running = True  # Flag to control the thread
 
-            self.node_processes[key] = process
-            print(f"Started launch file [{launch_file}].")
-            self.running = True  # Flag to control the thread
+                # Start a thread to handle output streaming
+                output_thread = threading.Thread(target=self._stream_output, args=(process.stdout,))
+                output_thread.daemon = True  # Daemon thread exits when the main program exits
+                output_thread.start()
 
-            # Start a thread to handle output streaming
-            output_thread = threading.Thread(target=self._stream_output, args=(process.stdout,))
-            output_thread.daemon = True  # Daemon thread exits when the main program exits
-            output_thread.start()
-
-            # Optionally handle stderr as well, if you want to stream errors
-            error_thread = threading.Thread(target=self._stream_output, args=(process.stderr,))
-            error_thread.daemon = True
-            error_thread.start()
-    
+                # Optionally handle stderr as well, if you want to stream errors
+                error_thread = threading.Thread(target=self._stream_output, args=(process.stderr,))
+                error_thread.daemon = True
+                error_thread.start()
+            else:
+                process = subprocess.Popen(['roslaunch', str(launch_file)], env=env)
+                self.node_processes[key] = process
+                print(f"Started launch file [{launch_file}].")
 
 
 
@@ -150,5 +151,7 @@ class ROSLaunchManager:
                     process.kill()
                 print(f"Stopped launch file [{key}].")
             self.node_processes.clear()
-        self.sock.close()  # Close the UDP socket
-        print("UDP socket closed.")
+
+        if(self.udp_stream):
+            self.sock.close()  # Close the UDP socket
+            print("UDP socket closed.")
