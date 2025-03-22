@@ -86,7 +86,7 @@ class ROSLaunchManager:
                     # print("[Stream still active...]")
                     last_heartbeat_time = current_time
 
-            # time.sleep(0.01)  # Sleep to reduce CPU usage
+            time.sleep(0.01)  # Sleep to reduce CPU usage
         pipe.close()  # Close pipe once we're done
         print("Stream finished.")
 
