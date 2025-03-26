@@ -18,7 +18,7 @@ class JoyMapThruster:
 
     def joy_CB(self, msg):
         surge_cmd = Float64()
-        surge_cmd.data = msg.axes[1]
+        surge_cmd.data = msg.axes[1]*1/2
         self.pub.publish(surge_cmd)
 
 if __name__ == "__main__":
