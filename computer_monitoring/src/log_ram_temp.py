@@ -31,7 +31,7 @@ class Log_RAM_Temp:
             return float(temp['cpu_thermal'][0][1])
         
         elif self.device == 'NVIDIA Jetson':
-            return float(temp['thermal_fan_est'][0][1])
+            return float(temp['CPU-therm'][0][1])
     
     def get_ram_usage(self):    
         meminfo = {}
