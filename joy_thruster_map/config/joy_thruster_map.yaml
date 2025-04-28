@@ -1,0 +1,3 @@
+joy_thruster_map:
+  controller_get_state: "/alpha_rise/controller/get_state"
+  surge_map_coeff: 0.5 #what should max joy value be mapped as surge thruster command

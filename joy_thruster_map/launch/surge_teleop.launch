@@ -19,5 +19,7 @@
         <!--Pub-->
         <remap from="surge_thruster" to="control/thruster/surge"/>
     </node>
+    <rosparam ns="$(arg robot_name)" command="load" file="$(find joy_thruster_map)/config/joy_thruster_map.yaml"/>
+
 
 </launch>
