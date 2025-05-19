@@ -36,8 +36,8 @@ class ROSLaunchNode(Node):
         self.launch_manager = ROSLaunchManager(self.udp_srv_ip, self.udp_srv_port, self.udp_stream_enable)
 
         # Advertise services
-        self.set_roslaunch_srv = self.create_service(SetLaunch, 'set_launch', self.f_set_launch_cb)
-        self.get_roslaunch_srv = self.create_service(GetLaunch, 'get_launch', self.f_get_launch_cb)
+        self.set_roslaunch_srv = self.create_service(SetLaunch, '~/set_launch', self.f_set_launch_cb)
+        self.get_roslaunch_srv = self.create_service(GetLaunch, '~/get_launch', self.f_get_launch_cb)
 
         current_path = os.getcwd()
         print(f"Current path: {current_path}")

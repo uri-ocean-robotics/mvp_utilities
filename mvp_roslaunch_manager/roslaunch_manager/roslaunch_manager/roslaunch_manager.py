@@ -43,7 +43,7 @@ class ROSLaunchManager:
                 )
 
                 self.node_processes[key] = process
-                print(f"Started Package [{pkg}], launch file [{launch_file}].")
+                print(f"Started Package [{pkg}], launch file [{launch_file}].",flush=True)
                 self.running = True  # Flag to control the thread
 
                 # Start a thread to handle output streaming
@@ -58,8 +58,10 @@ class ROSLaunchManager:
             else:
                 file_name = launch_file + '.launch.py'
                 process = subprocess.Popen(['ros2', 'launch', str(pkg), str(file_name)], env=env)
-                self.node_processes[key] = process
-                print(f"Started Package [{pkg}], launch file [{launch_file}].")
+                time.sleep(1)
+                if process.poll() is None:
+                    self.node_processes[key] = process
+                    print(f"Started Package [{pkg}], launch file [{launch_file}].", flush=True)
 
 
 
@@ -131,14 +133,17 @@ class ROSLaunchManager:
     def list_running_launches(self):
         # with self.lock:
             # return list(self.node_processes.keys())
+        p_list = []
         with self.lock:
             # Clean up terminated processes
             for key, process in list(self.node_processes.items()):
                 if process.poll() is not None:  # Process has terminated
                     self.node_processes.pop(key)
-            
+                pkg, launch_file = key
+                p_list.append(pkg + ":" + launch_file)
+
             # Return the updated list of running processes
-            return list(self.node_processes.keys())
+            return p_list
 
 
     def shutdown(self):
