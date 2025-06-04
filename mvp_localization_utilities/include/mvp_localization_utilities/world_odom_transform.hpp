@@ -30,6 +30,7 @@ class WorldOdomTransform : public rclcpp::Node
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr m_gps_odom_publisher;
         rclcpp::Publisher<geographic_msgs::msg::GeoPoint>::SharedPtr m_datum_publisher;
         rclcpp::Publisher<geographic_msgs::msg::GeoPoseStamped>::SharedPtr m_geopose_publisher;
+        rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr m_odom_navsat_publisher;
         
 
 
@@ -98,6 +99,8 @@ class WorldOdomTransform : public rclcpp::Node
         bool m_use_depth_for_tf = true;
 
         bool m_mag_declination_auto;
+
+        bool m_publish_odom_navsat = true;
 
         double m_earthR = 6371000;
 
