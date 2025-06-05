@@ -66,6 +66,8 @@ WorldOdomTransform::WorldOdomTransform(std::string name) : Node(name)
     this->declare_parameter("publish_tf", true);
     this->get_parameter("publish_tf", m_publish_tf);
 
+    this->declare_parameter("publish_odom_navsatfix", true);
+    this->get_parameter("publish_odom_navsatfix", m_publish_odom_navsat);
 
     m_datum.latitude = m_datum_latitude;
     m_datum.longitude = m_datum_longitude;
@@ -89,6 +91,7 @@ WorldOdomTransform::WorldOdomTransform(std::string name) : Node(name)
     m_gps_odom_publisher = this->create_publisher<nav_msgs::msg::Odometry>("gps/odometry", 10);
     m_datum_publisher = this->create_publisher<geographic_msgs::msg::GeoPoint>("gps/datum", 10);
     m_geopose_publisher = this->create_publisher<geographic_msgs::msg::GeoPoseStamped>("odometry/geopose", 10);
+    m_odom_navsat_publisher = this->create_publisher<sensor_msgs::msg::NavSatFix>("odometry/navsatfix",10);
 
     //subscriber
     m_gps_fix_subscriber = this->create_subscription<sensor_msgs::msg::NavSatFix>("gps/fix", 10, 
@@ -365,6 +368,30 @@ void WorldOdomTransform::f_cb_odom(const nav_msgs::msg::Odometry::SharedPtr msg)
             geopose.header.frame_id = msg->child_frame_id;
             
             m_geopose_publisher->publish(geopose);
+
+            //publish navsatfix for odometry
+            if(m_publish_odom_navsat)
+            {
+                sensor_msgs::msg::NavSatFix odom_navsatfix;
+                odom_navsatfix.header = world_pose.header;
+                odom_navsatfix.header.frame_id = msg->child_frame_id;
+                odom_navsatfix.status.status = 0;
+                odom_navsatfix.status.service = 1;
+                odom_navsatfix.latitude = geopose.pose.position.latitude;
+                odom_navsatfix.longitude = geopose.pose.position.longitude;
+                odom_navsatfix.altitude = geopose.pose.position.altitude;
+                odom_navsatfix.position_covariance[0] = msg->pose.covariance[0];
+                odom_navsatfix.position_covariance[1] = msg->pose.covariance[1];
+                odom_navsatfix.position_covariance[2] = msg->pose.covariance[2];
+                odom_navsatfix.position_covariance[3] = msg->pose.covariance[6];
+                odom_navsatfix.position_covariance[4] = msg->pose.covariance[7];
+                odom_navsatfix.position_covariance[5] = msg->pose.covariance[8];
+                odom_navsatfix.position_covariance[6] = msg->pose.covariance[12];
+                odom_navsatfix.position_covariance[7] = msg->pose.covariance[13];
+                odom_navsatfix.position_covariance[8] = msg->pose.covariance[14];
+                odom_navsatfix.position_covariance_type = 1;
+                m_odom_navsat_publisher->publish(odom_navsatfix);
+            } 
 
         } catch(tf2::TransformException &e) {
             RCLCPP_WARN(get_logger(), "Can't get the tf from world to odom when computing geopose");
