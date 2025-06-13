@@ -172,8 +172,9 @@ void WorldOdomTransform::f_cb_gps_fix(const sensor_msgs::msg::NavSatFix::SharedP
             m_odom_gps.pose.pose.orientation = tf_odom_gps.transform.rotation;
             m_gps_odom_flag = true;
 
-        } catch (tf2::TransformException &ex) {
-            RCLCPP_WARN(this->get_logger(), "Transform unavailable: %s", ex.what());
+        } catch (tf2::LookupException &ex) {
+            
+            RCLCPP_WARN(this->get_logger(), "GPS to Odom Transform unavailable: %s", ex.what());
         }
     }
 
@@ -253,6 +254,7 @@ void WorldOdomTransform::f_cb_gps_fix(const sensor_msgs::msg::NavSatFix::SharedP
             else{
                 // ROS_INFO("GPS fix covariance is not good");
                 RCLCPP_INFO(get_logger(), "GPS fix covariance is not good");
+                RCLCPP_INFO(get_logger(), "%lf, %lf, %lf\r\n", m_gps.position_covariance[0], m_gps.position_covariance[4], m_acceptable_var);
                 return;
             }
         }
