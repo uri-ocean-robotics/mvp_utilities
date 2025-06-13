@@ -145,22 +145,37 @@ void WorldOdomTransform::f_cb_gps_fix(const sensor_msgs::msg::NavSatFix::SharedP
 
         // m_odom_gps = m_odom; //map the most recent odom;
     //get gps location in the odom
-    geometry_msgs::msg::TransformStamped tf_odom_gps = m_transform_buffer->lookupTransform(
-                    m_odom_frame,
-                    msg->header.frame_id,
-                    tf2::TimePointZero,
-                    10ms
+    // geometry_msgs::msg::TransformStamped tf_odom_gps = m_transform_buffer->lookupTransform(
+    //                 m_odom_frame,
+    //                 msg->header.frame_id,
+    //                 tf2::TimePointZero,
+    //                 10ms
+    //             );
+    bool m_gps_odom_flag = false;
+    if(!m_tf_set)
+    {
+        try {
+            geometry_msgs::msg::TransformStamped tf_odom_gps = m_transform_buffer->lookupTransform(
+                m_odom_frame,
+                msg->header.frame_id,
+                tf2::TimePointZero,
+                10ms
                 );
-    m_odom_gps.header = m_odom.header;
-    m_odom_gps.child_frame_id = msg->header.frame_id;
-    m_odom_gps.pose.pose.position.x = tf_odom_gps.transform.translation.x;
-    m_odom_gps.pose.pose.position.y = tf_odom_gps.transform.translation.y;
-    m_odom_gps.pose.pose.position.z = tf_odom_gps.transform.translation.z;
-    // Optional: fill the orientation
-    m_odom_gps.pose.pose.orientation = tf_odom_gps.transform.rotation;
+            // use tf
 
+            m_odom_gps.header = m_odom.header;
+            m_odom_gps.child_frame_id = msg->header.frame_id;
+            m_odom_gps.pose.pose.position.x = tf_odom_gps.transform.translation.x;
+            m_odom_gps.pose.pose.position.y = tf_odom_gps.transform.translation.y;
+            m_odom_gps.pose.pose.position.z = tf_odom_gps.transform.translation.z;
+            // Optional: fill the orientation
+            m_odom_gps.pose.pose.orientation = tf_odom_gps.transform.rotation;
+            m_gps_odom_flag = true;
 
-    
+        } catch (tf2::TransformException &ex) {
+            RCLCPP_WARN(this->get_logger(), "Transform unavailable: %s", ex.what());
+        }
+    }
 
     if(m_datum_set)
     {
@@ -226,7 +241,7 @@ void WorldOdomTransform::f_cb_gps_fix(const sensor_msgs::msg::NavSatFix::SharedP
     }
     else
     {
-         if(m_datum_set)
+         if(m_datum_set & m_gps_odom_flag)
         {
             if(m_gps.position_covariance[0]<m_acceptable_var 
                 && m_gps.position_covariance[4]<m_acceptable_var
