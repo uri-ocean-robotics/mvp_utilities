@@ -64,12 +64,22 @@ add_executable(world_odom_transform_node src/world_odom_transform_node.cpp)
 target_link_libraries(world_odom_transform_node ${library_name} ${GeographicLib_LIBRARIES})
 ament_target_dependencies(world_odom_transform_node ${dependencies})
 
+add_executable(zero_odom_publisher src/zero_odom_publisher.cpp)
+target_link_libraries(zero_odom_publisher ${library_name} ${GeographicLib_LIBRARIES})
+ament_target_dependencies(zero_odom_publisher ${dependencies})
+
+
 install(TARGETS world_odom_transform_node ${library_name}
 ARCHIVE DESTINATION lib
 LIBRARY DESTINATION lib
 RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
+install(TARGETS zero_odom_publisher ${library_name}
+ARCHIVE DESTINATION lib
+LIBRARY DESTINATION lib
+RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
 
 install(DIRECTORY include/
 DESTINATION include/
