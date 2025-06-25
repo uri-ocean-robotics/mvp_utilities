@@ -1,0 +1,20 @@
+/alpha/surge_teleop:
+  ros__parameters:
+    # Joy topic
+    joy_topic: '/alpha_rise/mvp_helm/bhv_teleop/joy'
+
+    # Name of service 
+    controller_get_state_srv: '/controller/get_state'
+    
+    # Surge Thruster config. {0: Single Surge Config, 1: Differential Surge Config}
+    thruster_config: 1
+    
+    # Single Surge Config
+    single_surge_map_coeff: 1.0
+    single_surge_topic: 'surge/thruster'
+    
+    # Differential Surge Config
+    differential_surge_map_coeff: 1.0
+    port_surge_topic: 'surge/port/thruster'
+    starboard_surge_topic: 'surge/starboard/thruster'
+
