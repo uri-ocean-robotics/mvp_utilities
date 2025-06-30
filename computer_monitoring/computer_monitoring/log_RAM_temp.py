@@ -2,16 +2,14 @@
 
 #Author: Tony Jacob
 #Part of RISE Project. 
-#Log RAM and Temp of computer boards and publish as ROS topics.
+#Log RAM and Temp of computer boards and publish as a single msg.
 #tony.jacob@uri.edu
 
 import os
 import rclpy
-import time
-from builtin_interfaces.msg import Time as RosTime
+from math import nan
 from rclpy.node import Node
-from std_msgs.msg import Float64
-from sensor_msgs.msg import Temperature
+from std_msgs.msg import Float64MultiArray
 import psutil
 
 
@@ -21,21 +19,22 @@ class Log_RAM_Temp(Node):
         self.device = self.check_device()
         device_name = self.device.split()[1].lower()
         
-        self.ram_pub = self.create_publisher(Float64, device_name + "/ram_utilized", 1)
-        self.cpu_temp_pub = self.create_publisher(Temperature, device_name + "/cpu/temp", 1)
-        self.cpu_usage_pub = self.create_publisher(Float64, device_name + "/cpu/utilized", 1)
+        self.computer_telemetry = self.create_publisher(Float64MultiArray, device_name+"/telemetry", 1)
         
         self.timer = self.create_timer(1, self.collect_and_publish)
     
     def collect_and_publish(self):
-        self.get_ram_usage()
-        self.get_cpu_temp()
-        self.get_cpu_usage()
+        ram_usage_percent = self.get_ram_usage()
+        cpu_temp_C = self.get_cpu_temp()
+        cpu_usage_percent = self.get_cpu_usage()
+
+        msg = Float64MultiArray()
+        msg.data = [ram_usage_percent, cpu_temp_C, cpu_usage_percent]
+        self.computer_telemetry.publish(msg)
 
     def get_cpu_usage(self):
-        mem_msg = Float64()
-        mem_msg.data = psutil.cpu_percent()
-        self.cpu_usage_pub.publish(mem_msg)
+        return psutil.cpu_percent()
+
 
     def check_device(self):
         # Check for Raspberry Pi
@@ -63,22 +62,11 @@ class Log_RAM_Temp(Node):
         mem_total = meminfo['MemTotal']
         mem_available = meminfo['MemAvailable']
         mem_used = mem_total - mem_available
-        mem = (mem_used/mem_total) *100
-        mem_msg = Float64()
-        mem_msg.data = mem
-        self.ram_pub.publish(mem_msg)
+        return (mem_used/mem_total) *100
+
 
     def get_cpu_temp(self):
         temp = psutil.sensors_temperatures()
-        temp_msg = Temperature()
-        
-        now = time.time()
-        secs = int(now)
-        nsecs = int((now - secs) * 1e9)
-        
-        self.ros_time = RosTime(sec=secs, nanosec=nsecs)
-
-        temp_msg.header.stamp = self.ros_time
 
         if self.device == 'Raspberry Pi':
             cpu_temp = float(temp['cpu_thermal'][0][1])
@@ -87,10 +75,9 @@ class Log_RAM_Temp(Node):
             cpu_temp = float(temp['CPU-therm'][0][1])
         
         else:
-            cpu_temp = float(4)
+            cpu_temp = nan
         
-        temp_msg.temperature = cpu_temp
-        self.cpu_temp_pub.publish(temp_msg)
+        return cpu_temp
     
 def main():
     rclpy.init()
