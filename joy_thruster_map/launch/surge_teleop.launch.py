@@ -22,7 +22,7 @@ def generate_launch_description():
         package='joy_thruster_map',
         executable='joy_thruster_map',
         name='surge_teleop',
-        namespace="alpha",
+        namespace="alpha_rise",
         parameters=[param_config],
         output='screen'   
     )

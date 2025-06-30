@@ -54,9 +54,13 @@ class JoyMapThruster(Node):
             self.starboard_thruster = self.create_publisher(Float64, starboard_surge_topic, 10)
             self.get_logger().info(f"Started Thruster Mapping to Differential Surge Thrusters with topic name: {port_surge_topic} and {starboard_surge_topic}")
 
+        self.client = self.create_client(Trigger, self.get_state_service)
+
+        self.state = "_"
 
     def joy_callback(self, msg):
-        if self.check_controller_state():
+        self.check_controller_state()
+        if self.state == "enabled":
             if self.thruster_config == 0:
                 self.send_single_surge_command(msg)
             elif self.thruster_config == 1:
@@ -80,17 +84,14 @@ class JoyMapThruster(Node):
         elapsed_time = time.time() - self.current_time
         if elapsed_time > 0.01:
             self.current_time = time.time()
-            client = self.create_client(Trigger, self.get_state_service)
             req = Trigger.Request()
-            future = client.call_async(req)
-            rclpy.spin_until_future_complete(self, future, timeout_sec=3.0)
+            future = self.client.call_async(req)
+            future.add_done_callback(self.get_state_callback)
 
-            if future.result() is not None:
-                if future.result().message == "enabled":
-                    return True
-        return False
-
-
+    def get_state_callback(self, future):
+        response = future.result()
+        self.state = response.message
+    
 def main(args=None):
     rclpy.init(args=args)
     node = JoyMapThruster()
