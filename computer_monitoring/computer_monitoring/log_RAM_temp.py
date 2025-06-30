@@ -9,7 +9,7 @@ import os
 import rclpy
 from math import nan
 from rclpy.node import Node
-from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import Float32MultiArray
 import psutil
 
 
@@ -19,7 +19,7 @@ class Log_RAM_Temp(Node):
         self.device = self.check_device()
         device_name = self.device.split()[1].lower()
         
-        self.computer_telemetry = self.create_publisher(Float64MultiArray, device_name+"/telemetry", 1)
+        self.computer_telemetry = self.create_publisher(Float32MultiArray, device_name+"/telemetry", 1)
         
         self.timer = self.create_timer(1, self.collect_and_publish)
     
@@ -28,7 +28,7 @@ class Log_RAM_Temp(Node):
         cpu_temp_C = self.get_cpu_temp()
         cpu_usage_percent = self.get_cpu_usage()
 
-        msg = Float64MultiArray()
+        msg = Float32MultiArray()
         msg.data = [ram_usage_percent, cpu_temp_C, cpu_usage_percent]
         self.computer_telemetry.publish(msg)
 
