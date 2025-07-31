@@ -19,7 +19,7 @@ class Log_RAM_Temp(Node):
         self.device = self.check_device()
         device_name = self.device.split()[1].lower()
         
-        self.computer_telemetry = self.create_publisher(Float32MultiArray, device_name+"/telemetry", 1)
+        self.computer_telemetry = self.create_publisher(Float32MultiArray, device_name+"/computer_info", 1)
         
         self.timer = self.create_timer(1, self.collect_and_publish)
     
