@@ -28,7 +28,7 @@ GpsOdomPublisher::GpsOdomPublisher(std::string name) : Node(name)
 
     m_world_frame = m_tf_prefix + "/" + m_world_frame;
     m_child_frame = m_tf_prefix + "/" + m_child_frame;
-
+    
     m_gps_odom_publisher = this->create_publisher<nav_msgs::msg::Odometry>("gps/world_odometry", 10);
     m_gps_fix_subscriber = this->create_subscription<sensor_msgs::msg::NavSatFix>("gps/fix", 10, 
                                                                 std::bind(&GpsOdomPublisher::f_cb_gps_fix, 
@@ -40,7 +40,6 @@ GpsOdomPublisher::GpsOdomPublisher(std::string name) : Node(name)
 
 void GpsOdomPublisher::f_cb_gps_fix(const sensor_msgs::msg::NavSatFix::SharedPtr msg)
 {
-
     if (!fromLL_client->wait_for_service(std::chrono::seconds(1))) {
         RCLCPP_WARN(this->get_logger(), "FromLL service not available.");
         return;
@@ -61,11 +60,11 @@ void GpsOdomPublisher::f_cb_gps_fix(const sensor_msgs::msg::NavSatFix::SharedPtr
 
 
         // Send the request and wait for the result
-        auto future = fromLL_client->async_send_request(request);
-        auto result = rclcpp::spin_until_future_complete(this->get_node_base_interface(), future);
-
-        if (result == rclcpp::FutureReturnCode::SUCCESS) {
-            map_point = future.get()->map_point;
+        auto future = fromLL_client->async_send_request(request,
+        [this, msg](rclcpp::Client<robot_localization::srv::FromLL>::SharedFuture future_response) {
+        try {
+            auto response = future_response.get();
+            geometry_msgs::msg::Point map_point = response.get()->map_point;
 
             nav_msgs::msg::Odometry gps_world_odom;
             gps_world_odom.pose.pose.position.x = map_point.x;
@@ -76,25 +75,22 @@ void GpsOdomPublisher::f_cb_gps_fix(const sensor_msgs::msg::NavSatFix::SharedPtr
             gps_world_odom.header.stamp = msg->header.stamp;
 
             gps_world_odom.pose.covariance[0] = msg->position_covariance[0];
-            gps_world_odom.pose.covariance[1] = 0;
-            gps_world_odom.pose.covariance[2] = 0;
-            gps_world_odom.pose.covariance[6] =0;
             gps_world_odom.pose.covariance[7] = msg->position_covariance[4];
-            gps_world_odom.pose.covariance[8] = 0;
-            gps_world_odom.pose.covariance[12] = 0;
-            gps_world_odom.pose.covariance[13] = 0;
-            gps_world_odom.pose.covariance[14] =  msg->position_covariance[8];
+            gps_world_odom.pose.covariance[14] = msg->position_covariance[8];
 
-
-
-            return;
-        } else {
-            RCLCPP_WARN(this->get_logger(), "Failed to call FromLL service.");
-            return;
+            m_gps_odom_publisher->publish(gps_world_odom);
+            }
+            catch (const std::exception & e) {
+            RCLCPP_WARN(this->get_logger(), "FromLL service call failed: %s", e.what());
+            }
         }
+    );
+
     }
     else{
-            RCLCPP_WARN(this->get_logger(), "GPS covariance too large");
-            return;
+        RCLCPP_WARN(this->get_logger(), "GPS is not good");
+        RCLCPP_WARN(this->get_logger(), "GPS covariance = %lf, %lf; status=%d", msg->position_covariance[0], msg->position_covariance[4], msg->status.status);
+
+        return;
     }
 }
