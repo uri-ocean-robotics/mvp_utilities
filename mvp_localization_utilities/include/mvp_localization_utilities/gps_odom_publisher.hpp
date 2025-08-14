@@ -29,6 +29,9 @@ private:
 
     double m_acceptable_var;
 
+    double m_manual_position_covariance;
+
+
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr m_gps_odom_publisher;
 
     rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr m_gps_fix_subscriber;

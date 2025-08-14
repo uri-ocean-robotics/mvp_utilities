@@ -26,6 +26,9 @@ GpsOdomPublisher::GpsOdomPublisher(std::string name) : Node(name)
     this->declare_parameter("tf_prefix", "");
     this->get_parameter("tf_prefix", m_tf_prefix);
 
+    this->declare_parameter("manual_position_covariance", 0.0);
+    this->get_parameter("manual_position_covariance", m_manual_position_covariance);
+
     m_world_frame = m_tf_prefix + "/" + m_world_frame;
     m_child_frame = m_tf_prefix + "/" + m_child_frame;
     
@@ -77,6 +80,13 @@ void GpsOdomPublisher::f_cb_gps_fix(const sensor_msgs::msg::NavSatFix::SharedPtr
             gps_world_odom.pose.covariance[0] = msg->position_covariance[0];
             gps_world_odom.pose.covariance[7] = msg->position_covariance[4];
             gps_world_odom.pose.covariance[14] = msg->position_covariance[8];
+
+            if(m_manual_position_covariance>0)
+            {
+            gps_world_odom.pose.covariance[0] = m_manual_position_covariance;
+            gps_world_odom.pose.covariance[7] = m_manual_position_covariance;
+            gps_world_odom.pose.covariance[14] = m_manual_position_covariance;
+            }
 
             m_gps_odom_publisher->publish(gps_world_odom);
             }

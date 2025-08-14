@@ -45,8 +45,8 @@ WorldOdomTransform::WorldOdomTransform(std::string name) : Node(name)
     this->declare_parameter("acceptable_var", 0.0);
     this->get_parameter("acceptable_var", m_acceptable_var);
 
-    this->declare_parameter("position_accuracy", 0.0);
-    this->get_parameter("position_accuracy", m_position_accuracy);
+    this->declare_parameter("manual_position_covariance", 0.0);
+    this->get_parameter("manual_position_covariance", m_manual_position_covariance);
 
     this->declare_parameter("max_gps_wait_time", 60.0);
     this->get_parameter("max_gps_wait_time", m_gps_wait_time);
@@ -232,6 +232,14 @@ void WorldOdomTransform::f_cb_gps_fix(const sensor_msgs::msg::NavSatFix::SharedP
                 gps_odom.pose.covariance[12] = 0;
                 gps_odom.pose.covariance[13] = 0;
                 gps_odom.pose.covariance[14] =  msg->position_covariance[8];
+                
+                if(m_manual_position_covariance>0)
+                {
+                gps_odom.pose.covariance[0] = m_manual_position_covariance;
+                gps_odom.pose.covariance[7] = m_manual_position_covariance;
+                gps_odom.pose.covariance[14] = m_manual_position_covariance;
+                }
+
                 m_gps_odom_publisher->publish(gps_odom);  
 
             } 
