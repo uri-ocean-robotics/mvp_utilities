@@ -233,7 +233,7 @@ void WorldOdomTransform::f_cb_gps_fix(const sensor_msgs::msg::NavSatFix::SharedP
                 gps_odom.pose.covariance[13] = 0;
                 gps_odom.pose.covariance[14] =  msg->position_covariance[8];
                 
-                if(m_manual_position_covariance>0)
+                if(m_manual_position_covariance>0.0)
                 {
                 gps_odom.pose.covariance[0] = m_manual_position_covariance;
                 gps_odom.pose.covariance[7] = m_manual_position_covariance;

@@ -29,7 +29,7 @@ private:
 
     double m_acceptable_var;
 
-    double m_manual_position_covariance;
+    double m_manual_position_covariance=0.0;
 
 
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr m_gps_odom_publisher;
