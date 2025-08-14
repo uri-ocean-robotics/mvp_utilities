@@ -116,7 +116,7 @@ class WorldOdomTransform : public rclcpp::Node
 
         double m_datum_altitude;
 
-        double m_position_accuracy;
+        double m_manual_position_covariance=0.0;
 
         bool m_publish_tf;
 

@@ -45,8 +45,8 @@ WorldOdomTransform::WorldOdomTransform(std::string name) : Node(name)
     this->declare_parameter("acceptable_var", 0.0);
     this->get_parameter("acceptable_var", m_acceptable_var);
 
-    this->declare_parameter("position_accuracy", 0.0);
-    this->get_parameter("position_accuracy", m_position_accuracy);
+    this->declare_parameter("manual_position_covariance", 0.0);
+    this->get_parameter("manual_position_covariance", m_manual_position_covariance);
 
     this->declare_parameter("max_gps_wait_time", 60.0);
     this->get_parameter("max_gps_wait_time", m_gps_wait_time);
@@ -124,7 +124,7 @@ WorldOdomTransform::WorldOdomTransform(std::string name) : Node(name)
     m_transform_buffer = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     m_transform_listener = std::make_unique<tf2_ros::TransformListener>(*m_transform_buffer);
     br = std::make_unique<tf2_ros::StaticTransformBroadcaster>(*this);
-    printf("initialization done \r\n");
+    // printf("initialization done \r\n");
         
 }
 
@@ -232,6 +232,14 @@ void WorldOdomTransform::f_cb_gps_fix(const sensor_msgs::msg::NavSatFix::SharedP
                 gps_odom.pose.covariance[12] = 0;
                 gps_odom.pose.covariance[13] = 0;
                 gps_odom.pose.covariance[14] =  msg->position_covariance[8];
+                
+                if(m_manual_position_covariance>0.0)
+                {
+                gps_odom.pose.covariance[0] = m_manual_position_covariance;
+                gps_odom.pose.covariance[7] = m_manual_position_covariance;
+                gps_odom.pose.covariance[14] = m_manual_position_covariance;
+                }
+
                 m_gps_odom_publisher->publish(gps_odom);  
 
             } 
@@ -253,8 +261,8 @@ void WorldOdomTransform::f_cb_gps_fix(const sensor_msgs::msg::NavSatFix::SharedP
             }
             else{
                 // ROS_INFO("GPS fix covariance is not good");
-                RCLCPP_INFO(get_logger(), "GPS fix covariance is not good");
-                RCLCPP_INFO(get_logger(), "%lf, %lf, %lf\r\n", m_gps.position_covariance[0], m_gps.position_covariance[4], m_acceptable_var);
+                RCLCPP_WARN(get_logger(), "GPS fix is not good");
+                RCLCPP_WARN(get_logger(), "GPS covariance = %lf, %lf; status=%d", m_gps.position_covariance[0], m_gps.position_covariance[4], m_gps.status.status);
                 return;
             }
         }
@@ -427,10 +435,17 @@ bool WorldOdomTransform::f_cb_fromLL_srv(
             const std::shared_ptr<robot_localization::srv::FromLL::Request> request,
             const std::shared_ptr<robot_localization::srv::FromLL::Response> response)
 {
+
+    if(m_tf_set && m_datum_set)
+    {
     geometry_msgs::msg::Point::SharedPtr map_point = std::make_shared<geometry_msgs::msg::Point>();
     f_ll2dis(request->ll_point, map_point);
     response->map_point = *map_point;
     return true;
+    }
+    else{
+        return false;
+    }
 }
 
 
@@ -438,10 +453,14 @@ bool WorldOdomTransform::f_cb_toLL_srv(
             const std::shared_ptr<robot_localization::srv::ToLL::Request> request,
             const std::shared_ptr<robot_localization::srv::ToLL::Response> response)
 {   
+    if(m_tf_set && m_datum_set)
+    {
     geographic_msgs::msg::GeoPoint::SharedPtr ll_point = std::make_shared<geographic_msgs::msg::GeoPoint>();
     f_dis2ll(request->map_point, ll_point);
     response->ll_point = *ll_point;
     return true;
+    }
+    return false;
 }
 
 
