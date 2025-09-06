@@ -120,6 +120,8 @@ class WorldOdomTransform : public rclcpp::Node
 
         bool m_publish_tf;
 
+        bool m_datum_manual_flag;
+
         void f_ll2dis(geographic_msgs::msg::GeoPoint ll_point, geometry_msgs::msg::Point::SharedPtr map_point);
 
         void f_dis2ll(geometry_msgs::msg::Point map_point, geographic_msgs::msg::GeoPoint::SharedPtr ll_point);

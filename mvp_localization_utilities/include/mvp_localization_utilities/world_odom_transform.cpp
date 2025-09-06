@@ -57,6 +57,10 @@ WorldOdomTransform::WorldOdomTransform(std::string name) : Node(name)
     this->declare_parameter("datum_longitude", 0.0);
     this->get_parameter("datum_longitude", m_datum_longitude);
 
+    this->declare_parameter("datum_manual_start", true);
+    this->get_parameter("datum_manual_start", m_datum_manual_flag);
+
+
     this->declare_parameter("datum_altitude", 0.0);
     this->get_parameter("datum_altitude", m_datum_altitude);
 
@@ -74,14 +78,15 @@ WorldOdomTransform::WorldOdomTransform(std::string name) : Node(name)
     m_datum.altitude = m_datum_altitude;
 
 
-    if(m_datum.latitude==0){
-        RCLCPP_WARN(get_logger(), "Datum is not set please set the parameters");
-        m_datum_set = false;
-    }
-    else{
+    if(m_datum_manual_flag){
+        RCLCPP_WARN(get_logger(), "Datum will be determined manually to <%lf, %lf>", m_datum_latitude, m_datum_longitude);
         m_datum_set = true;
     }
-    
+    else{
+        RCLCPP_WARN(get_logger(), "Datum will be determined automatically");
+        m_datum_set = false;
+
+    } 
 
     m_tf_set = false;
     m_world_frame = m_tf_prefix + "/" + m_world_frame;
@@ -125,7 +130,6 @@ WorldOdomTransform::WorldOdomTransform(std::string name) : Node(name)
     m_transform_listener = std::make_unique<tf2_ros::TransformListener>(*m_transform_buffer);
     br = std::make_unique<tf2_ros::StaticTransformBroadcaster>(*this);
     // printf("initialization done \r\n");
-        
 }
 
 void WorldOdomTransform::f_cb_gps_fix(const sensor_msgs::msg::NavSatFix::SharedPtr msg)
@@ -171,6 +175,13 @@ void WorldOdomTransform::f_cb_gps_fix(const sensor_msgs::msg::NavSatFix::SharedP
             // Optional: fill the orientation
             m_odom_gps.pose.pose.orientation = tf_odom_gps.transform.rotation;
             m_gps_odom_flag = true;
+            if(!m_datum_manual_flag)
+            {
+                m_datum.latitude = m_gps_for_datum.latitude;
+                m_datum.longitude = m_gps_for_datum.longitude;
+                m_datum.altitude = m_gps_for_datum.altitude;
+                m_datum_set = true;
+            }
 
         } catch (tf2::LookupException &ex) {
             
