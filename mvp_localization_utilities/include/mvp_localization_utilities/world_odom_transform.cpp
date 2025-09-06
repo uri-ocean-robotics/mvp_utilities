@@ -176,11 +176,16 @@ void WorldOdomTransform::f_cb_gps_fix(const sensor_msgs::msg::NavSatFix::SharedP
             m_odom_gps.pose.pose.orientation = tf_odom_gps.transform.rotation;
             m_gps_odom_flag = true;
             if(!m_datum_manual_flag)
-            {
-                m_datum.latitude = m_gps_for_datum.latitude;
-                m_datum.longitude = m_gps_for_datum.longitude;
-                m_datum.altitude = m_gps_for_datum.altitude;
-                m_datum_set = true;
+            {   
+                if(m_gps_for_datum.position_covariance[0]<m_acceptable_var 
+                && m_gps_for_datum.position_covariance[4]<m_acceptable_var
+                && m_gps_for_datum.status.status>-1)
+                {
+                    m_datum.latitude = m_gps_for_datum.latitude;
+                    m_datum.longitude = m_gps_for_datum.longitude;
+                    m_datum.altitude = m_gps_for_datum.altitude;
+                    m_datum_set = true;
+                }
             }
 
         } catch (tf2::LookupException &ex) {
