@@ -54,6 +54,7 @@ set(library_name ${PROJECT_NAME})
 add_library(${library_name} SHARED 
   include/mvp_localization_utilities/world_odom_transform.cpp
   include/mvp_localization_utilities/gps_odom_publisher.cpp
+  include/mvp_localization_utilities/imu_on_demand_publisher.cpp
 )
 
 ament_target_dependencies(
@@ -73,6 +74,10 @@ add_executable(gps_world_odom_publisher src/gps_odom_publisher_node.cpp)
 target_link_libraries(gps_world_odom_publisher ${library_name} ${GeographicLib_LIBRARIES})
 ament_target_dependencies(gps_world_odom_publisher ${dependencies})
 
+add_executable(imu_trigger_publisher src/imu_trigger_publisher.cpp)
+target_link_libraries(imu_trigger_publisher ${library_name} ${GeographicLib_LIBRARIES})
+ament_target_dependencies(imu_trigger_publisher ${dependencies})
+
 
 install(TARGETS world_odom_transform_node ${library_name}
 ARCHIVE DESTINATION lib
@@ -87,6 +92,12 @@ RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
 install(TARGETS gps_world_odom_publisher ${library_name}
+ARCHIVE DESTINATION lib
+LIBRARY DESTINATION lib
+RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS imu_trigger_publisher ${library_name}
 ARCHIVE DESTINATION lib
 LIBRARY DESTINATION lib
 RUNTIME DESTINATION lib/${PROJECT_NAME}
