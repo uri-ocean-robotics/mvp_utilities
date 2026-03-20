@@ -339,7 +339,8 @@ bool WorldOdomTransform::f_set_tf()
 
     if (m_use_depth_for_tf)
     {
-    transformStamped.transform.translation.z = -m_depth_gps_temp.pose.pose.position.z + 0.0;
+    // transformStamped.transform.translation.z = -m_odom.pose.pose.position.z + 0.0;
+        transformStamped.transform.translation.z = 0 + 0.0;
     }
     else{
     transformStamped.transform.translation.z = -m_gps_temp.altitude + 0.0;
