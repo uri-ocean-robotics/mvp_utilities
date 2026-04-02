@@ -23,7 +23,8 @@ setup(
     license='TODO',
     entry_points={
         'console_scripts': [
-            'pointcloud_to_geopoints = pointcloud_to_geopoints.pointcloud_to_geopoints_ros:main'
+            'pointcloud_to_geopoints = pointcloud_to_geopoints.pointcloud_to_geopoints_ros:main',
+            'geopoints_to_navsatfix = pointcloud_to_geopoints.geopoints_to_navsatfix:main'
         ],
     },
 )

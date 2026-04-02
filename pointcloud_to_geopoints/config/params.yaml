@@ -9,3 +9,6 @@
     tf_timeout: 0.5
     tf_prefix: "wamv_rise"
     toll_service_name: "/wamv_rise/toLL"
+
+    subscribe_topic: "local/feature_geo_points_sub"
+    publish_topic: "navsatfix"
