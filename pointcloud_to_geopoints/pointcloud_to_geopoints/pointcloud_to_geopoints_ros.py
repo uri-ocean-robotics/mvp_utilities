@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import rclpy
+import numpy as np
 from rclpy.node import Node
 from rclpy.duration import Duration
 from rclpy.time import Time
@@ -42,7 +43,7 @@ class PointCloudToGeoPoints(Node):
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        self.cache = Cache(Subscriber(self, PointCloud2, self.cloud_topic), 10)
+        self.cache = Cache(Subscriber(self, PointCloud2, self.cloud_topic), 1)
 
         self.publisher = self.create_publisher(
             Float32MultiArray,
@@ -79,7 +80,7 @@ class PointCloudToGeoPoints(Node):
             field_names=["x", "y", "z"],
             skip_nans=True
         )
-        self.get_logger().info(f'pc2geopoints: Received {len(points)} points.')
+        self.get_logger().info(f'pc2geopts: Received {len(points)} points.')
         return [(float(p[0]), float(p[1]), float(p[2])) for p in points]
 
     def sample_points(self, points):
@@ -126,8 +127,8 @@ class PointCloudToGeoPoints(Node):
         try:
             response = future.result()
             if response is not None:
-                lat = response.ll_point.latitude
-                lon = response.ll_point.longitude
+                lat = response.ll_point.latitude * 100.0
+                lon = response.ll_point.longitude * 100.0
                 alt = response.ll_point.altitude
                 with self._lock:
                     self._geo_points.extend([lat, lon, alt])
@@ -142,9 +143,9 @@ class PointCloudToGeoPoints(Node):
         with self._lock:
             if self._pending_requests == 0 and self._geo_points:
                 output_msg = Float32MultiArray()
-                output_msg.data = self._geo_points.copy()
-                self._geo_points.clear()
+                output_msg.data  = self._geo_points
                 self.publisher.publish(output_msg)
+                self._geo_points.clear()
 
     def transform_point(self, point, from_frame, to_frame, stamp):
         try:
@@ -155,7 +156,6 @@ class PointCloudToGeoPoints(Node):
             p_sensor.point.y = point[1]
             p_sensor.point.z = point[2]
 
-            print(f"rclpy_time: {rclpy.time.Time()}, timeout: {self.tf_timeout}", flush=True)
             transform = self.tf_buffer.lookup_transform(
                 to_frame,
                 from_frame,
