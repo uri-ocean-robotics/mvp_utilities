@@ -51,15 +51,17 @@ include_directories(include
 )
 set(library_name ${PROJECT_NAME})
 
-add_library(${library_name} SHARED 
+add_library(${library_name} SHARED
   include/mvp_localization_utilities/world_odom_transform.cpp
   include/mvp_localization_utilities/gps_odom_publisher.cpp
+  include/mvp_localization_utilities/thruster_velocity_model.cpp
 )
 
 ament_target_dependencies(
-  ${library_name} 
-  ${dependencies} 
+  ${library_name}
+  ${dependencies}
 )
+target_link_libraries(${library_name} ${GeographicLib_LIBRARIES})
 
 add_executable(world_odom_transform_node src/world_odom_transform_node.cpp)
 target_link_libraries(world_odom_transform_node ${library_name} ${GeographicLib_LIBRARIES})
@@ -87,6 +89,16 @@ RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
 install(TARGETS gps_world_odom_publisher ${library_name}
+ARCHIVE DESTINATION lib
+LIBRARY DESTINATION lib
+RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+add_executable(thruster_velocity_model_node src/thruster_velocity_model_node.cpp)
+target_link_libraries(thruster_velocity_model_node ${library_name})
+ament_target_dependencies(thruster_velocity_model_node ${dependencies})
+
+install(TARGETS thruster_velocity_model_node
 ARCHIVE DESTINATION lib
 LIBRARY DESTINATION lib
 RUNTIME DESTINATION lib/${PROJECT_NAME}
